@@ -1,2 +1,2 @@
-# web
-The Bhojpur Web is a web engine used by the Bhojpur.NET Platform for secure application delivery.
+# Bhojpur Web - Service Engine
+The Bhojpur Web is a service engine used by the Bhojpur.NET Platform for secure application delivery.
