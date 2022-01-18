@@ -47,7 +47,6 @@ var loadCmd = &cobra.Command{
 	Use:   "load",
 	Short: "HTTP load testing of your web applications and/or services",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("web load testing started")
 		testing(args)
 	},
 }
@@ -193,7 +192,7 @@ func testing(args []string) {
 		return
 	}
 	target := args[0]
-
+	fmt.Println("generating web load for", target)
 	requestChan = make(chan *http.Request)
 	resultChan = make(chan *result)
 	summaryChan = make(chan *Summary)
