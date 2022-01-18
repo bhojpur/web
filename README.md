@@ -12,11 +12,11 @@ It is a software tool for web load testing and benchmarking HTTP servers and app
 
 Application Options:
 
-    -r, --num-requests= Number of requests to make (1)
-    -c, --concurrent=   Number of concurrent connections to make (1)
-    -k, --keep-alive    Use keep alive connection
-    -n, --no-gzip       Disable gzip accept encoding
-    -s, --secure-tls    Validate TLS/SSL certificates
+    --num-requests= Number of requests to make (1)
+    --concurrent=   Number of concurrent connections to make (1)
+    --keep-alive    Use keep alive connection
+    --no-gzip       Disable gzip accept encoding
+    --secure-tls    Validate TLS/SSL certificates
 
 For Example:
 
