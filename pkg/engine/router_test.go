@@ -1,160 +1,738 @@
 package engine
 
-// Copyright (c) 2018 Bhojpur Consulting Private Limited, India. All rights reserved.
-
-// Permission is hereby granted, free of charge, to any person obtaining a copy
-// of this software and associated documentation files (the "Software"), to deal
-// in the Software without restriction, including without limitation the rights
-// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-// copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
-
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-// THE SOFTWARE.
-
 import (
-	"fmt"
-	"io"
+	"bytes"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+
+	logs "github.com/bhojpur/logger/pkg/engine"
+
+	"github.com/bhojpur/web/pkg/context"
 )
 
-func stubHandler(responseBody string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		io.WriteString(w, responseBody)
-		for key, values := range r.URL.Query() {
-			fmt.Fprintf(w, " %s: %s", key, values[0])
-		}
+type TestController struct {
+	Controller
+}
+
+func (tc *TestController) Get() {
+	tc.Data["Username"] = "bhojpur"
+	tc.Ctx.Output.Body([]byte("ok"))
+}
+
+func (tc *TestController) Post() {
+	tc.Ctx.Output.Body([]byte(tc.Ctx.Input.Query(":name")))
+}
+
+func (tc *TestController) Param() {
+	tc.Ctx.Output.Body([]byte(tc.Ctx.Input.Query(":name")))
+}
+
+func (tc *TestController) List() {
+	tc.Ctx.Output.Body([]byte("i am list"))
+}
+
+func (tc *TestController) Params() {
+	tc.Ctx.Output.Body([]byte(tc.Ctx.Input.Param("0") + tc.Ctx.Input.Param("1") + tc.Ctx.Input.Param("2")))
+}
+
+func (tc *TestController) Myext() {
+	tc.Ctx.Output.Body([]byte(tc.Ctx.Input.Param(":ext")))
+}
+
+func (tc *TestController) GetURL() {
+	tc.Ctx.Output.Body([]byte(tc.URLFor(".Myext")))
+}
+
+func (tc *TestController) GetParams() {
+	tc.Ctx.WriteString(tc.Ctx.Input.Query(":last") + "+" +
+		tc.Ctx.Input.Query(":first") + "+" + tc.Ctx.Input.Query("learn"))
+}
+
+func (tc *TestController) GetManyRouter() {
+	tc.Ctx.WriteString(tc.Ctx.Input.Query(":id") + tc.Ctx.Input.Query(":page"))
+}
+
+func (tc *TestController) GetEmptyBody() {
+	var res []byte
+	tc.Ctx.Output.Body(res)
+}
+
+type JSONController struct {
+	Controller
+}
+
+func (jc *JSONController) Prepare() {
+	jc.Data["json"] = "prepare"
+	jc.ServeJSON(true)
+}
+
+func (jc *JSONController) Get() {
+	jc.Data["Username"] = "bhojpur"
+	jc.Ctx.Output.Body([]byte("ok"))
+}
+
+func TestUrlFor(t *testing.T) {
+	handler := NewControllerRegister()
+	handler.Add("/api/list", &TestController{}, "*:List")
+	handler.Add("/person/:last/:first", &TestController{}, "*:Param")
+	if a := handler.URLFor("TestController.List"); a != "/api/list" {
+		logs.Info(a)
+		t.Errorf("TestController.List must equal to /api/list")
+	}
+	if a := handler.URLFor("TestController.Param", ":last", "xie", ":first", "bhoj"); a != "/person/pur/bhoj" {
+		t.Errorf("TestController.Param must equal to /person/pur/bhoj, but get " + a)
+	}
+}
+
+func TestUrlFor3(t *testing.T) {
+	handler := NewControllerRegister()
+	handler.AddAuto(&TestController{})
+	if a := handler.URLFor("TestController.Myext"); a != "/test/myext" && a != "/Test/Myext" {
+		t.Errorf("TestController.Myext must equal to /test/myext, but get " + a)
+	}
+	if a := handler.URLFor("TestController.GetURL"); a != "/test/geturl" && a != "/Test/GetURL" {
+		t.Errorf("TestController.GetURL must equal to /test/geturl, but get " + a)
+	}
+}
+
+func TestUrlFor2(t *testing.T) {
+	handler := NewControllerRegister()
+	handler.Add("/v1/:v/cms_:id(.+)_:page(.+).html", &TestController{}, "*:List")
+	handler.Add("/v1/:username/edit", &TestController{}, "get:GetURL")
+	handler.Add("/v1/:v(.+)_cms/ttt_:id(.+)_:page(.+).html", &TestController{}, "*:Param")
+	handler.Add("/:year:int/:month:int/:title/:entid", &TestController{})
+	if handler.URLFor("TestController.GetURL", ":username", "bhojpur") != "/v1/bhojpur/edit" {
+		logs.Info(handler.URLFor("TestController.GetURL"))
+		t.Errorf("TestController.List must equal to /v1/bhojpur/edit")
+	}
+
+	if handler.URLFor("TestController.List", ":v", "za", ":id", "12", ":page", "123") !=
+		"/v1/za/cms_12_123.html" {
+		logs.Info(handler.URLFor("TestController.List"))
+		t.Errorf("TestController.List must equal to /v1/za/cms_12_123.html")
+	}
+	if handler.URLFor("TestController.Param", ":v", "za", ":id", "12", ":page", "123") !=
+		"/v1/za_cms/ttt_12_123.html" {
+		logs.Info(handler.URLFor("TestController.Param"))
+		t.Errorf("TestController.List must equal to /v1/za_cms/ttt_12_123.html")
+	}
+	if handler.URLFor("TestController.Get", ":year", "1111", ":month", "11",
+		":title", "aaaa", ":entid", "aaaa") !=
+		"/1111/11/aaaa/aaaa" {
+		logs.Info(handler.URLFor("TestController.Get"))
+		t.Errorf("TestController.Get must equal to /1111/11/aaaa/aaaa")
+	}
+}
+
+func TestUserFunc(t *testing.T) {
+	r, _ := http.NewRequest("GET", "/api/list", nil)
+	w := httptest.NewRecorder()
+
+	handler := NewControllerRegister()
+	handler.Add("/api/list", &TestController{}, "*:List")
+	handler.ServeHTTP(w, r)
+	if w.Body.String() != "i am list" {
+		t.Errorf("user define func can't run")
+	}
+}
+
+func TestPostFunc(t *testing.T) {
+	r, _ := http.NewRequest("POST", "/bhojpur", nil)
+	w := httptest.NewRecorder()
+
+	handler := NewControllerRegister()
+	handler.Add("/:name", &TestController{})
+	handler.ServeHTTP(w, r)
+	if w.Body.String() != "bhojpur" {
+		t.Errorf("post func should bhojpur")
+	}
+}
+
+func TestAutoFunc(t *testing.T) {
+	r, _ := http.NewRequest("GET", "/test/list", nil)
+	w := httptest.NewRecorder()
+
+	handler := NewControllerRegister()
+	handler.AddAuto(&TestController{})
+	handler.ServeHTTP(w, r)
+	if w.Body.String() != "i am list" {
+		t.Errorf("user define func can't run")
+	}
+}
+
+func TestAutoFunc2(t *testing.T) {
+	r, _ := http.NewRequest("GET", "/Test/List", nil)
+	w := httptest.NewRecorder()
+
+	handler := NewControllerRegister()
+	handler.AddAuto(&TestController{})
+	handler.ServeHTTP(w, r)
+	if w.Body.String() != "i am list" {
+		t.Errorf("user define func can't run")
+	}
+}
+
+func TestAutoFuncParams(t *testing.T) {
+	r, _ := http.NewRequest("GET", "/test/params/2009/11/12", nil)
+	w := httptest.NewRecorder()
+
+	handler := NewControllerRegister()
+	handler.AddAuto(&TestController{})
+	handler.ServeHTTP(w, r)
+	if w.Body.String() != "20091112" {
+		t.Errorf("user define func can't run")
+	}
+}
+
+func TestAutoExtFunc(t *testing.T) {
+	r, _ := http.NewRequest("GET", "/test/myext.json", nil)
+	w := httptest.NewRecorder()
+
+	handler := NewControllerRegister()
+	handler.AddAuto(&TestController{})
+	handler.ServeHTTP(w, r)
+	if w.Body.String() != "json" {
+		t.Errorf("user define func can't run")
+	}
+}
+
+func TestEscape(t *testing.T) {
+
+	r, _ := http.NewRequest("GET", "/search/%E4%BD%A0%E5%A5%BD", nil)
+	w := httptest.NewRecorder()
+
+	handler := NewControllerRegister()
+	handler.Get("/search/:keyword(.+)", func(ctx *context.Context) {
+		value := ctx.Input.Param(":keyword")
+		ctx.Output.Body([]byte(value))
 	})
-}
-
-func testRequest(t *testing.T, router *Router, method string, path string, expectedCode int, expectedBody string) {
-	response := httptest.NewRecorder()
-	request, err := http.NewRequest(method, "http://web.bhojpur.net"+path, nil)
-	if err != nil {
-		t.Errorf("Unable to create test %s request for %s", method, path)
-	}
-
-	router.ServeHTTP(response, request)
-	if response.Code != expectedCode {
-		t.Errorf("%s %s: expected HTTP code %d, received %d", method, path, expectedCode, response.Code)
-	}
-	if response.Body.String() != expectedBody {
-		t.Errorf("%s %s: expected HTTP response body \"%s\", received \"%s\"", method, path, expectedBody, response.Body.String())
+	handler.ServeHTTP(w, r)
+	str := w.Body.String()
+	if str != "你好" {
+		t.Errorf("incorrect, %s", str)
 	}
 }
 
-func TestRouter(t *testing.T) {
-	r := NewRouter()
-	r.Get("/widgets", stubHandler("widgetIndex"))
-	r.Post("/widgets", stubHandler("widgetCreate"))
-	r.Get("/widgets/:id", stubHandler("widgetShow"))
-	r.Get("/widgets/:id/edit", stubHandler("widgetEdit"))
-	r.Put("/widgets/:id", stubHandler("widgetUpdate"))
-	r.Delete("/widgets/:id", stubHandler("widgetDelete"))
+func TestRouteOk(t *testing.T) {
 
-	testRequest(t, r, "GET", "/widgets", 200, "widgetIndex")
-	testRequest(t, r, "POST", "/widgets", 200, "widgetCreate")
-	testRequest(t, r, "GET", "/widgets/1", 200, "widgetShow id: 1")
-	testRequest(t, r, "GET", "/widgets/2", 200, "widgetShow id: 2")
-	testRequest(t, r, "GET", "/widgets/1/edit", 200, "widgetEdit id: 1")
-	testRequest(t, r, "PUT", "/widgets/1", 200, "widgetUpdate id: 1")
-	testRequest(t, r, "DELETE", "/widgets/1", 200, "widgetDelete id: 1")
-	testRequest(t, r, "GET", "/missing", 404, "404 Not Found")
-}
+	r, _ := http.NewRequest("GET", "/person/anderson/thomas?learn=kungfu", nil)
+	w := httptest.NewRecorder()
 
-var benchmarkRouter *Router
-
-func getBenchmarkRouter() *Router {
-	if benchmarkRouter != nil {
-		return benchmarkRouter
-	}
-
-	benchmarkRouter := NewRouter()
-	handler := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
-	benchmarkRouter.AddRoute("GET", "/", handler)
-	benchmarkRouter.AddRoute("GET", "/foo", handler)
-	benchmarkRouter.AddRoute("GET", "/foo/bar", handler)
-	benchmarkRouter.AddRoute("GET", "/foo/baz", handler)
-	benchmarkRouter.AddRoute("GET", "/foo/bar/baz/quz", handler)
-	benchmarkRouter.AddRoute("GET", "/people", handler)
-	benchmarkRouter.AddRoute("GET", "/people/search", handler)
-	benchmarkRouter.AddRoute("GET", "/people/:id", handler)
-	benchmarkRouter.AddRoute("GET", "/users", handler)
-	benchmarkRouter.AddRoute("GET", "/users/:id", handler)
-	benchmarkRouter.AddRoute("GET", "/widgets", handler)
-	benchmarkRouter.AddRoute("GET", "/widgets/important", handler)
-
-	return benchmarkRouter
-}
-
-func getBench(b *testing.B, handler http.Handler, path string, expectedCode int) {
-	response := httptest.NewRecorder()
-	request, err := http.NewRequest("GET", "http://web.bhojpur.net"+path, nil)
-	if err != nil {
-		b.Fatalf("Unable to create test GET request for %v", path)
-	}
-
-	handler.ServeHTTP(response, request)
-	if response.Code != expectedCode {
-		b.Fatalf("GET %v: expected HTTP code %v, received %v", path, expectedCode, response.Code)
+	handler := NewControllerRegister()
+	handler.Add("/person/:last/:first", &TestController{}, "get:GetParams")
+	handler.ServeHTTP(w, r)
+	body := w.Body.String()
+	if body != "anderson+thomas+kungfu" {
+		t.Errorf("url param set to [%s];", body)
 	}
 }
 
-func BenchmarkRoutedRequest(b *testing.B) {
-	router := getBenchmarkRouter()
+func TestManyRoute(t *testing.T) {
+
+	r, _ := http.NewRequest("GET", "/bhojpur32-12.html", nil)
+	w := httptest.NewRecorder()
+
+	handler := NewControllerRegister()
+	handler.Add("/bhojpur:id([0-9]+)-:page([0-9]+).html", &TestController{}, "get:GetManyRouter")
+	handler.ServeHTTP(w, r)
+
+	body := w.Body.String()
+
+	if body != "3212" {
+		t.Errorf("url param set to [%s];", body)
+	}
+}
+
+// Test for issue #1669
+func TestEmptyResponse(t *testing.T) {
+
+	r, _ := http.NewRequest("GET", "/bhojpur-empty.html", nil)
+	w := httptest.NewRecorder()
+
+	handler := NewControllerRegister()
+	handler.Add("/bhojpur-empty.html", &TestController{}, "get:GetEmptyBody")
+	handler.ServeHTTP(w, r)
+
+	if body := w.Body.String(); body != "" {
+		t.Error("want empty body")
+	}
+}
+
+func TestNotFound(t *testing.T) {
+	r, _ := http.NewRequest("GET", "/", nil)
+	w := httptest.NewRecorder()
+
+	handler := NewControllerRegister()
+	handler.ServeHTTP(w, r)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("Code set to [%v]; want [%v]", w.Code, http.StatusNotFound)
+	}
+}
+
+// TestStatic tests the ability to serve static
+// content from the filesystem
+func TestStatic(t *testing.T) {
+	r, _ := http.NewRequest("GET", "/static/js/jquery.js", nil)
+	w := httptest.NewRecorder()
+
+	handler := NewControllerRegister()
+	handler.ServeHTTP(w, r)
+
+	if w.Code != 404 {
+		t.Errorf("handler.Static failed to serve file")
+	}
+}
+
+func TestPrepare(t *testing.T) {
+	r, _ := http.NewRequest("GET", "/json/list", nil)
+	w := httptest.NewRecorder()
+
+	handler := NewControllerRegister()
+	handler.Add("/json/list", &JSONController{})
+	handler.ServeHTTP(w, r)
+	if w.Body.String() != `"prepare"` {
+		t.Errorf(w.Body.String() + "user define func can't run")
+	}
+}
+
+func TestAutoPrefix(t *testing.T) {
+	r, _ := http.NewRequest("GET", "/admin/test/list", nil)
+	w := httptest.NewRecorder()
+
+	handler := NewControllerRegister()
+	handler.AddAutoPrefix("/admin", &TestController{})
+	handler.ServeHTTP(w, r)
+	if w.Body.String() != "i am list" {
+		t.Errorf("TestAutoPrefix can't run")
+	}
+}
+
+func TestRouterGet(t *testing.T) {
+	r, _ := http.NewRequest("GET", "/user", nil)
+	w := httptest.NewRecorder()
+
+	handler := NewControllerRegister()
+	handler.Get("/user", func(ctx *context.Context) {
+		ctx.Output.Body([]byte("Get userlist"))
+	})
+	handler.ServeHTTP(w, r)
+	if w.Body.String() != "Get userlist" {
+		t.Errorf("TestRouterGet can't run")
+	}
+}
+
+func TestRouterPost(t *testing.T) {
+	r, _ := http.NewRequest("POST", "/user/123", nil)
+	w := httptest.NewRecorder()
+
+	handler := NewControllerRegister()
+	handler.Post("/user/:id", func(ctx *context.Context) {
+		ctx.Output.Body([]byte(ctx.Input.Param(":id")))
+	})
+	handler.ServeHTTP(w, r)
+	if w.Body.String() != "123" {
+		t.Errorf("TestRouterPost can't run")
+	}
+}
+
+func sayhello(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("sayhello"))
+}
+
+func TestRouterHandler(t *testing.T) {
+	r, _ := http.NewRequest("POST", "/sayhi", nil)
+	w := httptest.NewRecorder()
+
+	handler := NewControllerRegister()
+	handler.Handler("/sayhi", http.HandlerFunc(sayhello))
+	handler.ServeHTTP(w, r)
+	if w.Body.String() != "sayhello" {
+		t.Errorf("TestRouterHandler can't run")
+	}
+}
+
+func TestRouterHandlerAll(t *testing.T) {
+	r, _ := http.NewRequest("POST", "/sayhi/a/b/c", nil)
+	w := httptest.NewRecorder()
+
+	handler := NewControllerRegister()
+	handler.Handler("/sayhi", http.HandlerFunc(sayhello), true)
+	handler.ServeHTTP(w, r)
+	if w.Body.String() != "sayhello" {
+		t.Errorf("TestRouterHandler can't run")
+	}
+}
+
+//
+// Benchmarks NewHttpSever:
+//
+
+func bhojpurFilterFunc(ctx *context.Context) {
+	ctx.WriteString("hello")
+}
+
+type AdminController struct {
+	Controller
+}
+
+func (a *AdminController) Get() {
+	a.Ctx.WriteString("hello")
+}
+
+func TestRouterFunc(t *testing.T) {
+	mux := NewControllerRegister()
+	mux.Get("/action", bhojpurFilterFunc)
+	mux.Post("/action", bhojpurFilterFunc)
+	rw, r := testRequest("GET", "/action")
+	mux.ServeHTTP(rw, r)
+	if rw.Body.String() != "hello" {
+		t.Errorf("TestRouterFunc can't run")
+	}
+}
+
+func BenchmarkFunc(b *testing.B) {
+	mux := NewControllerRegister()
+	mux.Get("/action", bhojpurFilterFunc)
+	rw, r := testRequest("GET", "/action")
 	b.ResetTimer()
-
 	for i := 0; i < b.N; i++ {
-		getBench(b, router, "/widgets/important", 200)
+		mux.ServeHTTP(rw, r)
 	}
 }
 
-func BenchmarkFindEndpointRoot(b *testing.B) {
-	router := getBenchmarkRouter()
-
+func BenchmarkController(b *testing.B) {
+	mux := NewControllerRegister()
+	mux.Add("/action", &AdminController{})
+	rw, r := testRequest("GET", "/action")
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		router.findEndpoint("GET", segmentizePath("/"), []string{})
+		mux.ServeHTTP(rw, r)
 	}
 }
 
-func BenchmarkFindEndpointSegment1(b *testing.B) {
-	router := getBenchmarkRouter()
+func testRequest(method, path string) (*httptest.ResponseRecorder, *http.Request) {
+	request, _ := http.NewRequest(method, path, nil)
+	recorder := httptest.NewRecorder()
 
-	for i := 0; i < b.N; i++ {
-		router.findEndpoint("GET", segmentizePath("/foo"), []string{})
+	return recorder, request
+}
+
+// Expectation: A Filter with the correct configuration should be created given
+// specific parameters.
+func TestInsertFilter(t *testing.T) {
+	testName := "TestInsertFilter"
+
+	mux := NewControllerRegister()
+	mux.InsertFilter("*", BeforeRouter, func(*context.Context) {}, WithReturnOnOutput(true))
+	if !mux.filters[BeforeRouter][0].returnOnOutput {
+		t.Errorf(
+			"%s: passing no variadic params should set returnOnOutput to true",
+			testName)
+	}
+	if mux.filters[BeforeRouter][0].resetParams {
+		t.Errorf(
+			"%s: passing no variadic params should set resetParams to false",
+			testName)
+	}
+
+	mux = NewControllerRegister()
+	mux.InsertFilter("*", BeforeRouter, func(*context.Context) {}, WithReturnOnOutput(false))
+	if mux.filters[BeforeRouter][0].returnOnOutput {
+		t.Errorf(
+			"%s: passing false as 1st variadic param should set returnOnOutput to false",
+			testName)
+	}
+
+	mux = NewControllerRegister()
+	mux.InsertFilter("*", BeforeRouter, func(*context.Context) {}, WithReturnOnOutput(true), WithResetParams(true))
+	if !mux.filters[BeforeRouter][0].resetParams {
+		t.Errorf(
+			"%s: passing true as 2nd variadic param should set resetParams to true",
+			testName)
 	}
 }
 
-func BenchmarkFindEndpointSegment2(b *testing.B) {
-	router := getBenchmarkRouter()
+// Expectation: the second variadic arg should cause the execution of the filter
+// to preserve the parameters from before its execution.
+func TestParamResetFilter(t *testing.T) {
+	testName := "TestParamResetFilter"
+	route := "/bhojpur/*" // splat
+	path := "/bhojpur/routes/routes"
 
-	for i := 0; i < b.N; i++ {
-		router.findEndpoint("GET", segmentizePath("/people/search"), []string{})
+	mux := NewControllerRegister()
+
+	mux.InsertFilter("*", BeforeExec, bhojpurResetParams, WithReturnOnOutput(true), WithResetParams(true))
+
+	mux.Get(route, bhojpurHandleResetParams)
+
+	rw, r := testRequest("GET", path)
+	mux.ServeHTTP(rw, r)
+
+	// The two functions, `bhojpurResetParams` and `bhojpurHandleResetParams` add
+	// a response header of `Splat`.  The expectation here is that that Header
+	// value should match what the _request's_ router set, not the filter's.
+
+	headers := rw.Result().Header
+	if len(headers["Splat"]) != 1 {
+		t.Errorf(
+			"%s: There was an error in the test. Splat param not set in Header",
+			testName)
+	}
+	if headers["Splat"][0] != "routes/routes" {
+		t.Errorf(
+			"%s: expected `:splat` param to be [routes/routes] but it was [%s]",
+			testName, headers["Splat"][0])
 	}
 }
 
-func BenchmarkFindEndpointSegment2Placeholder(b *testing.B) {
-	router := getBenchmarkRouter()
+// Execution point: BeforeRouter
+// expectation: only BeforeRouter function is executed, notmatch output as router doesn't handle
+func TestFilterBeforeRouter(t *testing.T) {
+	testName := "TestFilterBeforeRouter"
+	url := "/beforeRouter"
 
-	for i := 0; i < b.N; i++ {
-		router.findEndpoint("GET", segmentizePath("/people/1"), []string{})
+	mux := NewControllerRegister()
+	mux.InsertFilter(url, BeforeRouter, bhojpurBeforeRouter1)
+
+	mux.Get(url, bhojpurFilterFunc)
+
+	rw, r := testRequest("GET", url)
+	mux.ServeHTTP(rw, r)
+
+	if !strings.Contains(rw.Body.String(), "BeforeRouter1") {
+		t.Errorf(testName + " BeforeRouter did not run")
+	}
+	if strings.Contains(rw.Body.String(), "hello") {
+		t.Errorf(testName + " BeforeRouter did not return properly")
 	}
 }
 
-func BenchmarkFindEndpointSegment4(b *testing.B) {
-	router := getBenchmarkRouter()
+// Execution point: BeforeExec
+// expectation: only BeforeExec function is executed, match as router determines route only
+func TestFilterBeforeExec(t *testing.T) {
+	testName := "TestFilterBeforeExec"
+	url := "/beforeExec"
 
-	for i := 0; i < b.N; i++ {
-		router.findEndpoint("GET", segmentizePath("/foo/bar/baz/quz"), []string{})
+	mux := NewControllerRegister()
+	mux.InsertFilter(url, BeforeRouter, bhojpurFilterNoOutput, WithReturnOnOutput(true))
+	mux.InsertFilter(url, BeforeExec, bhojpurBeforeExec1, WithReturnOnOutput(true))
+
+	mux.Get(url, bhojpurFilterFunc)
+
+	rw, r := testRequest("GET", url)
+	mux.ServeHTTP(rw, r)
+
+	if !strings.Contains(rw.Body.String(), "BeforeExec1") {
+		t.Errorf(testName + " BeforeExec did not run")
+	}
+	if strings.Contains(rw.Body.String(), "hello") {
+		t.Errorf(testName + " BeforeExec did not return properly")
+	}
+	if strings.Contains(rw.Body.String(), "BeforeRouter") {
+		t.Errorf(testName + " BeforeRouter ran in error")
+	}
+}
+
+// Execution point: AfterExec
+// expectation: only AfterExec function is executed, match as router handles
+func TestFilterAfterExec(t *testing.T) {
+	testName := "TestFilterAfterExec"
+	url := "/afterExec"
+
+	mux := NewControllerRegister()
+	mux.InsertFilter(url, BeforeRouter, bhojpurFilterNoOutput)
+	mux.InsertFilter(url, BeforeExec, bhojpurFilterNoOutput)
+	mux.InsertFilter(url, AfterExec, bhojpurAfterExec1, WithReturnOnOutput(false))
+
+	mux.Get(url, bhojpurFilterFunc)
+
+	rw, r := testRequest("GET", url)
+	mux.ServeHTTP(rw, r)
+
+	if !strings.Contains(rw.Body.String(), "AfterExec1") {
+		t.Errorf(testName + " AfterExec did not run")
+	}
+	if !strings.Contains(rw.Body.String(), "hello") {
+		t.Errorf(testName + " handler did not run properly")
+	}
+	if strings.Contains(rw.Body.String(), "BeforeRouter") {
+		t.Errorf(testName + " BeforeRouter ran in error")
+	}
+	if strings.Contains(rw.Body.String(), "BeforeExec") {
+		t.Errorf(testName + " BeforeExec ran in error")
+	}
+}
+
+// Execution point: FinishRouter
+// expectation: only FinishRouter function is executed, match as router handles
+func TestFilterFinishRouter(t *testing.T) {
+	testName := "TestFilterFinishRouter"
+	url := "/finishRouter"
+
+	mux := NewControllerRegister()
+	mux.InsertFilter(url, BeforeRouter, bhojpurFilterNoOutput, WithReturnOnOutput(true))
+	mux.InsertFilter(url, BeforeExec, bhojpurFilterNoOutput, WithReturnOnOutput(true))
+	mux.InsertFilter(url, AfterExec, bhojpurFilterNoOutput, WithReturnOnOutput(true))
+	mux.InsertFilter(url, FinishRouter, bhojpurFinishRouter1, WithReturnOnOutput(true))
+
+	mux.Get(url, bhojpurFilterFunc)
+
+	rw, r := testRequest("GET", url)
+	mux.ServeHTTP(rw, r)
+
+	if strings.Contains(rw.Body.String(), "FinishRouter1") {
+		t.Errorf(testName + " FinishRouter did not run")
+	}
+	if !strings.Contains(rw.Body.String(), "hello") {
+		t.Errorf(testName + " handler did not run properly")
+	}
+	if strings.Contains(rw.Body.String(), "AfterExec1") {
+		t.Errorf(testName + " AfterExec ran in error")
+	}
+	if strings.Contains(rw.Body.String(), "BeforeRouter") {
+		t.Errorf(testName + " BeforeRouter ran in error")
+	}
+	if strings.Contains(rw.Body.String(), "BeforeExec") {
+		t.Errorf(testName + " BeforeExec ran in error")
+	}
+}
+
+// Execution point: FinishRouter
+// expectation: only first FinishRouter function is executed, match as router handles
+func TestFilterFinishRouterMultiFirstOnly(t *testing.T) {
+	testName := "TestFilterFinishRouterMultiFirstOnly"
+	url := "/finishRouterMultiFirstOnly"
+
+	mux := NewControllerRegister()
+	mux.InsertFilter(url, FinishRouter, bhojpurFinishRouter1, WithReturnOnOutput(false))
+	mux.InsertFilter(url, FinishRouter, bhojpurFinishRouter2)
+
+	mux.Get(url, bhojpurFilterFunc)
+
+	rw, r := testRequest("GET", url)
+	mux.ServeHTTP(rw, r)
+
+	if !strings.Contains(rw.Body.String(), "FinishRouter1") {
+		t.Errorf(testName + " FinishRouter1 did not run")
+	}
+	if !strings.Contains(rw.Body.String(), "hello") {
+		t.Errorf(testName + " handler did not run properly")
+	}
+	// not expected in body
+	if strings.Contains(rw.Body.String(), "FinishRouter2") {
+		t.Errorf(testName + " FinishRouter2 did run")
+	}
+}
+
+// Execution point: FinishRouter
+// expectation: both FinishRouter functions execute, match as router handles
+func TestFilterFinishRouterMulti(t *testing.T) {
+	testName := "TestFilterFinishRouterMulti"
+	url := "/finishRouterMulti"
+
+	mux := NewControllerRegister()
+	mux.InsertFilter(url, FinishRouter, bhojpurFinishRouter1, WithReturnOnOutput(false))
+	mux.InsertFilter(url, FinishRouter, bhojpurFinishRouter2, WithReturnOnOutput(false))
+
+	mux.Get(url, bhojpurFilterFunc)
+
+	rw, r := testRequest("GET", url)
+	mux.ServeHTTP(rw, r)
+
+	if !strings.Contains(rw.Body.String(), "FinishRouter1") {
+		t.Errorf(testName + " FinishRouter1 did not run")
+	}
+	if !strings.Contains(rw.Body.String(), "hello") {
+		t.Errorf(testName + " handler did not run properly")
+	}
+	if !strings.Contains(rw.Body.String(), "FinishRouter2") {
+		t.Errorf(testName + " FinishRouter2 did not run properly")
+	}
+}
+
+func bhojpurFilterNoOutput(ctx *context.Context) {
+}
+
+func bhojpurBeforeRouter1(ctx *context.Context) {
+	ctx.WriteString("|BeforeRouter1")
+}
+
+func bhojpurBeforeExec1(ctx *context.Context) {
+	ctx.WriteString("|BeforeExec1")
+}
+
+func bhojpurAfterExec1(ctx *context.Context) {
+	ctx.WriteString("|AfterExec1")
+}
+
+func bhojpurFinishRouter1(ctx *context.Context) {
+	ctx.WriteString("|FinishRouter1")
+}
+
+func bhojpurFinishRouter2(ctx *context.Context) {
+	ctx.WriteString("|FinishRouter2")
+}
+
+func bhojpurResetParams(ctx *context.Context) {
+	ctx.ResponseWriter.Header().Set("splat", ctx.Input.Param(":splat"))
+}
+
+func bhojpurHandleResetParams(ctx *context.Context) {
+	ctx.ResponseWriter.Header().Set("splat", ctx.Input.Param(":splat"))
+}
+
+// YAML
+type YAMLController struct {
+	Controller
+}
+
+func (jc *YAMLController) Prepare() {
+	jc.Data["yaml"] = "prepare"
+	jc.ServeYAML()
+}
+
+func (jc *YAMLController) Get() {
+	jc.Data["Username"] = "bhojpur"
+	jc.Ctx.Output.Body([]byte("ok"))
+}
+
+func TestYAMLPrepare(t *testing.T) {
+	r, _ := http.NewRequest("GET", "/yaml/list", nil)
+	w := httptest.NewRecorder()
+
+	handler := NewControllerRegister()
+	handler.Add("/yaml/list", &YAMLController{})
+	handler.ServeHTTP(w, r)
+	if strings.TrimSpace(w.Body.String()) != "prepare" {
+		t.Errorf(w.Body.String())
+	}
+}
+
+func TestRouterEntityTooLargeCopyBody(t *testing.T) {
+	_MaxMemory := BasConfig.MaxMemory
+	_CopyRequestBody := BasConfig.CopyRequestBody
+	BasConfig.CopyRequestBody = true
+	BasConfig.MaxMemory = 20
+
+	BhojpurApp.Cfg.CopyRequestBody = true
+	BhojpurApp.Cfg.MaxMemory = 20
+	b := bytes.NewBuffer([]byte("barbarbarbarbarbarbarbarbarbar"))
+	r, _ := http.NewRequest("POST", "/user/123", b)
+	w := httptest.NewRecorder()
+
+	handler := NewControllerRegister()
+	handler.Post("/user/:id", func(ctx *context.Context) {
+		ctx.Output.Body([]byte(ctx.Input.Param(":id")))
+	})
+	handler.ServeHTTP(w, r)
+
+	BasConfig.CopyRequestBody = _CopyRequestBody
+	BasConfig.MaxMemory = _MaxMemory
+
+	if w.Code != http.StatusRequestEntityTooLarge {
+		t.Errorf("TestRouterRequestEntityTooLarge can't run")
 	}
 }
