@@ -1,5 +1,25 @@
 package engine
 
+// Copyright (c) 2018 Bhojpur Consulting Private Limited, India. All rights reserved.
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 import (
 	"fmt"
 	"html/template"
@@ -9,10 +29,10 @@ import (
 	"strconv"
 	"strings"
 
+	ctxsvr "github.com/bhojpur/web/pkg/context"
+	webapp "github.com/bhojpur/web/pkg/core"
 	"github.com/bhojpur/web/pkg/core/utils"
-	bhojpur "github.com/bhojpur/web/pkg/engine"
-
-	"github.com/bhojpur/web/pkg/context"
+	websvr "github.com/bhojpur/web/pkg/engine"
 )
 
 const (
@@ -70,15 +90,15 @@ var tpl = `
 `
 
 // render default application error page with error and stack string.
-func showErr(err interface{}, ctx *context.Context, stack string) {
+func showErr(err interface{}, ctx *ctxsvr.Context, stack string) {
 	t, _ := template.New("bhojpurerrortemp").Parse(tpl)
 	data := map[string]string{
-		"AppError":       fmt.Sprintf("%s:%v", BasConfig.AppName, err),
+		"AppError":       fmt.Sprintf("%s:%v", websvr.BasConfig.AppName, err),
 		"RequestMethod":  ctx.Input.Method(),
 		"RequestURL":     ctx.Input.URI(),
 		"RemoteAddr":     ctx.Input.IP(),
 		"Stack":          stack,
-		"BhojpurVersion": bhojpur.VERSION,
+		"BhojpurVersion": webapp.VERSION,
 		"GoVersion":      runtime.Version(),
 	}
 	t.Execute(ctx.ResponseWriter, data)
@@ -365,7 +385,7 @@ func responseError(rw http.ResponseWriter, r *http.Request, errCode int, errCont
 	t, _ := template.New("bhojpurerrortemp").Parse(errtpl)
 	data := M{
 		"Title":          http.StatusText(errCode),
-		"BhojpurVersion": bhojpur.VERSION,
+		"BhojpurVersion": webapp.VERSION,
 		"Content":        template.HTML(errContent),
 	}
 	t.Execute(rw, data)
@@ -375,19 +395,19 @@ func responseError(rw http.ResponseWriter, r *http.Request, errCode int, errCont
 // usage:
 // 	bhojpur.ErrorHandler("404",NotFound)
 //	bhojpur.ErrorHandler("500",InternalServerError)
-func ErrorHandler(code string, h http.HandlerFunc) *HttpServer {
+func ErrorHandler(code string, h http.HandlerFunc) *websvr.HttpServer {
 	ErrorMaps[code] = &errorInfo{
 		errorType: errorTypeHandler,
 		handler:   h,
 		method:    code,
 	}
-	return BhojpurApp
+	return websvr.WebEngine
 }
 
 // ErrorController registers ControllerInterface to each http err code string.
 // usage:
 // 	bhojpur.ErrorController(&controllers.ErrorController{})
-func ErrorController(c ControllerInterface) *HttpServer {
+func ErrorController(c websvr.ControllerInterface) *websvr.HttpServer {
 	reflectVal := reflect.ValueOf(c)
 	rt := reflectVal.Type()
 	ct := reflect.Indirect(reflectVal).Type()
@@ -402,17 +422,17 @@ func ErrorController(c ControllerInterface) *HttpServer {
 			}
 		}
 	}
-	return BhojpurApp
+	return websvr.WebEngine
 }
 
 // Exception Write HttpStatus with errCode and Exec error handler if exist.
-func Exception(errCode uint64, ctx *context.Context) {
+func Exception(errCode uint64, ctx *ctxsvr.Context) {
 	exception(strconv.FormatUint(errCode, 10), ctx)
 }
 
 // show error string as simple text message.
 // if error string is empty, show 503 or 500 error as default.
-func exception(errCode string, ctx *context.Context) {
+func exception(errCode string, ctx *ctxsvr.Context) {
 	atoi := func(code string) int {
 		v, err := strconv.Atoi(code)
 		if err == nil {
@@ -435,9 +455,9 @@ func exception(errCode string, ctx *context.Context) {
 	ctx.WriteString(errCode)
 }
 
-func executeError(err *errorInfo, ctx *context.Context, code int) {
+func executeError(err *errorInfo, ctx *ctxsvr.Context, code int) {
 	//make sure to log the error in the access log
-	LogAccess(ctx, nil, code)
+	websvr.LogAccess(ctx, nil, code)
 
 	if err.errorType == errorTypeHandler {
 		ctx.ResponseWriter.WriteHeader(code)
@@ -448,7 +468,7 @@ func executeError(err *errorInfo, ctx *context.Context, code int) {
 		ctx.Output.SetStatus(code)
 		//Invoke the request handler
 		vc := reflect.New(err.controllerType)
-		execController, ok := vc.Interface().(ControllerInterface)
+		execController, ok := vc.Interface().(websvr.ControllerInterface)
 		if !ok {
 			panic("controller is not ControllerInterface")
 		}
@@ -464,7 +484,7 @@ func executeError(err *errorInfo, ctx *context.Context, code int) {
 		method.Call([]reflect.Value{})
 
 		//render template
-		if BasConfig.WebConfig.AutoRender {
+		if websvr.BasConfig.WebConfig.AutoRender {
 			if err := execController.Render(); err != nil {
 				panic(err)
 			}

@@ -1,5 +1,25 @@
 package context
 
+// Copyright (c) 2018 Bhojpur Consulting Private Limited, India. All rights reserved.
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 import (
 	"net/http"
 	"net/http/httptest"
@@ -77,13 +97,13 @@ func TestBind(t *testing.T) {
 	}
 	for _, c := range cases {
 		r, _ := http.NewRequest("GET", c.request, nil)
-		beegoInput := NewInput()
-		beegoInput.Context = NewContext()
-		beegoInput.Context.Reset(httptest.NewRecorder(), r)
+		bhojpurInput := NewInput()
+		bhojpurInput.Context = NewContext()
+		bhojpurInput.Context.Reset(httptest.NewRecorder(), r)
 
 		for _, item := range c.valueGp {
 			got := item.empty
-			err := beegoInput.Bind(&got, item.field)
+			err := bhojpurInput.Bind(&got, item.field)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -97,45 +117,45 @@ func TestBind(t *testing.T) {
 
 func TestSubDomain(t *testing.T) {
 	r, _ := http.NewRequest("GET", "http://www.bhojpur.net/?id=123&isok=true&ft=1.2&ol[0]=1&ol[1]=2&ul[]=str&ul[]=array&user.Name=bhojpur", nil)
-	beegoInput := NewInput()
-	beegoInput.Context = NewContext()
-	beegoInput.Context.Reset(httptest.NewRecorder(), r)
+	bhojpurInput := NewInput()
+	bhojpurInput.Context = NewContext()
+	bhojpurInput.Context.Reset(httptest.NewRecorder(), r)
 
-	subdomain := beegoInput.SubDomains()
+	subdomain := bhojpurInput.SubDomains()
 	if subdomain != "www" {
 		t.Fatal("Subdomain parse error, got" + subdomain)
 	}
 
 	r, _ = http.NewRequest("GET", "http://localhost/", nil)
-	beegoInput.Context.Request = r
-	if beegoInput.SubDomains() != "" {
-		t.Fatal("Subdomain parse error, should be empty, got " + beegoInput.SubDomains())
+	bhojpurInput.Context.Request = r
+	if bhojpurInput.SubDomains() != "" {
+		t.Fatal("Subdomain parse error, should be empty, got " + bhojpurInput.SubDomains())
 	}
 
 	r, _ = http.NewRequest("GET", "http://aa.bb.bhojpur.net/", nil)
-	beegoInput.Context.Request = r
-	if beegoInput.SubDomains() != "aa.bb" {
-		t.Fatal("Subdomain parse error, got " + beegoInput.SubDomains())
+	bhojpurInput.Context.Request = r
+	if bhojpurInput.SubDomains() != "aa.bb" {
+		t.Fatal("Subdomain parse error, got " + bhojpurInput.SubDomains())
 	}
 
 	/* TODO Fix this
 	r, _ = http.NewRequest("GET", "http://127.0.0.1/", nil)
-	beegoInput.Context.Request = r
-	if beegoInput.SubDomains() != "" {
-		t.Fatal("Subdomain parse error, got " + beegoInput.SubDomains())
+	bhojpurInput.Context.Request = r
+	if bhojpurInput.SubDomains() != "" {
+		t.Fatal("Subdomain parse error, got " + bhojpurInput.SubDomains())
 	}
 	*/
 
 	r, _ = http.NewRequest("GET", "http://bhojpur.net/", nil)
-	beegoInput.Context.Request = r
-	if beegoInput.SubDomains() != "" {
-		t.Fatal("Subdomain parse error, got " + beegoInput.SubDomains())
+	bhojpurInput.Context.Request = r
+	if bhojpurInput.SubDomains() != "" {
+		t.Fatal("Subdomain parse error, got " + bhojpurInput.SubDomains())
 	}
 
 	r, _ = http.NewRequest("GET", "http://aa.bb.cc.dd.bhojpur.net/", nil)
-	beegoInput.Context.Request = r
-	if beegoInput.SubDomains() != "aa.bb.cc.dd" {
-		t.Fatal("Subdomain parse error, got " + beegoInput.SubDomains())
+	bhojpurInput.Context.Request = r
+	if bhojpurInput.SubDomains() != "aa.bb.cc.dd" {
+		t.Fatal("Subdomain parse error, got " + bhojpurInput.SubDomains())
 	}
 }
 
@@ -192,12 +212,12 @@ func TestParams(t *testing.T) {
 
 }
 func BenchmarkQuery(b *testing.B) {
-	beegoInput := NewInput()
-	beegoInput.Context = NewContext()
-	beegoInput.Context.Request, _ = http.NewRequest("POST", "http://app.bhojpur.net/?q=foo", nil)
+	bhojpurInput := NewInput()
+	bhojpurInput.Context = NewContext()
+	bhojpurInput.Context.Request, _ = http.NewRequest("POST", "http://app.bhojpur.net/?q=foo", nil)
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			beegoInput.Query("q")
+			bhojpurInput.Query("q")
 		}
 	})
 }

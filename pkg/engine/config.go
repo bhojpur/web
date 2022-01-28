@@ -1,5 +1,25 @@
 package engine
 
+// Copyright (c) 2018 Bhojpur Consulting Private Limited, India. All rights reserved.
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 import (
 	"crypto/tls"
 	"fmt"
@@ -9,12 +29,13 @@ import (
 	"runtime"
 	"strings"
 
-	logs "github.com/bhojpur/logger/pkg/engine"
+	logsvr "github.com/bhojpur/logger/pkg/engine"
 	session "github.com/bhojpur/session/pkg/engine"
-	"github.com/bhojpur/web/pkg/core/config"
-	bhojpur "github.com/bhojpur/web/pkg/engine"
+	webapp "github.com/bhojpur/web/pkg/core"
+	cfgsvr "github.com/bhojpur/web/pkg/core/config"
+	websvr "github.com/bhojpur/web/pkg/engine"
 
-	"github.com/bhojpur/web/pkg/context"
+	ctxsvr "github.com/bhojpur/web/pkg/context"
 	"github.com/bhojpur/web/pkg/core/utils"
 )
 
@@ -26,7 +47,7 @@ type Config struct {
 	RouterCaseSensitive bool
 	ServerName          string
 	RecoverPanic        bool
-	RecoverFunc         func(*context.Context, *Config)
+	RecoverFunc         func(*ctxsvr.Context, *Config)
 	CopyRequestBody     bool
 	EnableGzip          bool
 	// MaxMemory and MaxUploadSize are used to limit the request body
@@ -114,10 +135,10 @@ type LogConfig struct {
 }
 
 var (
-	// BasConfig is the default config for Application
+	// BasConfig is the default config for Web Application
 	BasConfig *Config
 	// AppConfig is the instance of Config, store the config information from file
-	AppConfig *bhojpurAppConfig
+	AppConfig *webAppConfig
 	// AppPath is the absolute path to the app
 	AppPath string
 	// GlobalSessions is the instance for the session manager
@@ -149,7 +170,7 @@ func init() {
 	if !utils.FileExists(appConfigPath) {
 		appConfigPath = filepath.Join(AppPath, "conf", filename)
 		if !utils.FileExists(appConfigPath) {
-			AppConfig = &bhojpurAppConfig{innerConfig: config.NewFakeConfig()}
+			AppConfig = &webAppConfig{innerConfig: cfgsvr.NewFakeConfig()}
 			return
 		}
 	}
@@ -158,33 +179,33 @@ func init() {
 	}
 }
 
-func defaultRecoverPanic(ctx *context.Context, cfg *Config) {
+func defaultRecoverPanic(ctx *ctxsvr.Context, cfg *Config) {
 	if err := recover(); err != nil {
-		if err == ErrAbort {
+		if err == websvr.ErrAbort {
 			return
 		}
 		if !cfg.RecoverPanic {
 			panic(err)
 		}
 		if cfg.EnableErrorsShow {
-			if _, ok := ErrorMaps[fmt.Sprint(err)]; ok {
+			if _, ok := websvr.ErrorMaps[fmt.Sprint(err)]; ok {
 				exception(fmt.Sprint(err), ctx)
 				return
 			}
 		}
 		var stack string
-		logs.Critical("the request url is ", ctx.Input.URL())
-		logs.Critical("Handler crashed with error", err)
+		logsvr.Critical("the request url is ", ctx.Input.URL())
+		logsvr.Critical("Handler crashed with error", err)
 		for i := 1; ; i++ {
 			_, file, line, ok := runtime.Caller(i)
 			if !ok {
 				break
 			}
-			logs.Critical(fmt.Sprintf("%s:%d", file, line))
+			logsvr.Critical(fmt.Sprintf("%s:%d", file, line))
 			stack = stack + fmt.Sprintln(fmt.Sprintf("%s:%d", file, line))
 		}
-		if cfg.RunMode == DEV && cfg.EnableErrorsRender {
-			showErr(err, ctx, stack)
+		if cfg.RunMode == websvr.DEV && cfg.EnableErrorsRender {
+			logsvr.showErr(err, ctx, stack)
 		}
 		if ctx.Output.Status != 0 {
 			ctx.ResponseWriter.WriteHeader(ctx.Output.Status)
@@ -197,9 +218,9 @@ func defaultRecoverPanic(ctx *context.Context, cfg *Config) {
 func newBasConfig() *Config {
 	res := &Config{
 		AppName:             "bhojpur",
-		RunMode:             PROD,
+		RunMode:             websvr.PROD,
 		RouterCaseSensitive: true,
-		ServerName:          "bhojpurServer:" + bhojpur.VERSION,
+		ServerName:          "Bhojpur WebEngine:" + webapp.VERSION,
 		RecoverPanic:        true,
 
 		CopyRequestBody:    false,
@@ -287,7 +308,7 @@ func parseConfig(appConfigPath string) (err error) {
 // assignConfig is tricky.
 // For 1.x, it use assignSingleConfig to parse the file
 // but for 2.x, we use Unmarshaler method
-func assignConfig(ac config.Configer) error {
+func assignConfig(ac cfgsvr.Configure) error {
 
 	parseConfigForV1(ac)
 
@@ -299,19 +320,19 @@ func assignConfig(ac config.Configer) error {
 	}
 
 	// init log
-	logs.Reset()
+	logsvr.Reset()
 	for adaptor, cfg := range BasConfig.Log.Outputs {
-		err := logs.SetLogger(adaptor, cfg)
+		err := logsvr.SetLogger(adaptor, cfg)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, fmt.Sprintf("%s with the config %q got err:%s", adaptor, cfg, err.Error()))
 			return err
 		}
 	}
-	logs.SetLogFuncCall(BasConfig.Log.FileLineNum)
+	logsvr.SetLogFuncCall(BasConfig.Log.FileLineNum)
 	return nil
 }
 
-func parseConfigForV1(ac config.Configer) {
+func parseConfigForV1(ac cfgsvr.Configure) {
 	for _, i := range []interface{}{BasConfig, &BasConfig.Listen, &BasConfig.WebConfig, &BasConfig.Log, &BasConfig.WebConfig.Session} {
 		assignSingleConfig(i, ac)
 	}
@@ -377,7 +398,7 @@ func parseConfigForV1(ac config.Configer) {
 	}
 }
 
-func assignSingleConfig(p interface{}, ac config.Configer) {
+func assignSingleConfig(p interface{}, ac cfgsvr.Configure) {
 	pt := reflect.TypeOf(p)
 	if pt.Kind() != reflect.Ptr {
 		return
@@ -426,122 +447,122 @@ func LoadAppConfig(adapterName, configPath string) error {
 	return parseConfig(appConfigPath)
 }
 
-type bhojpurAppConfig struct {
-	config.BaseConfiger
-	innerConfig config.Configer
+type webAppConfig struct {
+	cfgsvr.BaseConfigure
+	innerConfig cfgsvr.Configure
 }
 
-func newAppConfig(appConfigProvider, appConfigPath string) (*bhojpurAppConfig, error) {
-	ac, err := config.NewConfig(appConfigProvider, appConfigPath)
+func newAppConfig(appConfigProvider, appConfigPath string) (*webAppConfig, error) {
+	ac, err := cfgsvr.NewConfig(appConfigProvider, appConfigPath)
 	if err != nil {
 		return nil, err
 	}
-	return &bhojpurAppConfig{innerConfig: ac}, nil
+	return &webAppConfig{innerConfig: ac}, nil
 }
 
-func (b *bhojpurAppConfig) Unmarshaler(prefix string, obj interface{}, opt ...config.DecodeOption) error {
+func (b *webAppConfig) Unmarshaler(prefix string, obj interface{}, opt ...cfgsvr.DecodeOption) error {
 	return b.innerConfig.Unmarshaler(prefix, obj, opt...)
 }
 
-func (b *bhojpurAppConfig) Set(key, val string) error {
+func (b *webAppConfig) Set(key, val string) error {
 	if err := b.innerConfig.Set(BasConfig.RunMode+"::"+key, val); err != nil {
 		return b.innerConfig.Set(key, val)
 	}
 	return nil
 }
 
-func (b *bhojpurAppConfig) String(key string) (string, error) {
+func (b *webAppConfig) String(key string) (string, error) {
 	if v, err := b.innerConfig.String(BasConfig.RunMode + "::" + key); v != "" && err == nil {
 		return v, nil
 	}
 	return b.innerConfig.String(key)
 }
 
-func (b *bhojpurAppConfig) Strings(key string) ([]string, error) {
+func (b *webAppConfig) Strings(key string) ([]string, error) {
 	if v, err := b.innerConfig.Strings(BasConfig.RunMode + "::" + key); len(v) > 0 && err == nil {
 		return v, nil
 	}
 	return b.innerConfig.Strings(key)
 }
 
-func (b *bhojpurAppConfig) Int(key string) (int, error) {
+func (b *webAppConfig) Int(key string) (int, error) {
 	if v, err := b.innerConfig.Int(BasConfig.RunMode + "::" + key); err == nil {
 		return v, nil
 	}
 	return b.innerConfig.Int(key)
 }
 
-func (b *bhojpurAppConfig) Int64(key string) (int64, error) {
+func (b *webAppConfig) Int64(key string) (int64, error) {
 	if v, err := b.innerConfig.Int64(BasConfig.RunMode + "::" + key); err == nil {
 		return v, nil
 	}
 	return b.innerConfig.Int64(key)
 }
 
-func (b *bhojpurAppConfig) Bool(key string) (bool, error) {
+func (b *webAppConfig) Bool(key string) (bool, error) {
 	if v, err := b.innerConfig.Bool(BasConfig.RunMode + "::" + key); err == nil {
 		return v, nil
 	}
 	return b.innerConfig.Bool(key)
 }
 
-func (b *bhojpurAppConfig) Float(key string) (float64, error) {
+func (b *webAppConfig) Float(key string) (float64, error) {
 	if v, err := b.innerConfig.Float(BasConfig.RunMode + "::" + key); err == nil {
 		return v, nil
 	}
 	return b.innerConfig.Float(key)
 }
 
-func (b *bhojpurAppConfig) DefaultString(key string, defaultVal string) string {
+func (b *webAppConfig) DefaultString(key string, defaultVal string) string {
 	if v, err := b.String(key); v != "" && err == nil {
 		return v
 	}
 	return defaultVal
 }
 
-func (b *bhojpurAppConfig) DefaultStrings(key string, defaultVal []string) []string {
+func (b *webAppConfig) DefaultStrings(key string, defaultVal []string) []string {
 	if v, err := b.Strings(key); len(v) != 0 && err == nil {
 		return v
 	}
 	return defaultVal
 }
 
-func (b *bhojpurAppConfig) DefaultInt(key string, defaultVal int) int {
+func (b *webAppConfig) DefaultInt(key string, defaultVal int) int {
 	if v, err := b.Int(key); err == nil {
 		return v
 	}
 	return defaultVal
 }
 
-func (b *bhojpurAppConfig) DefaultInt64(key string, defaultVal int64) int64 {
+func (b *webAppConfig) DefaultInt64(key string, defaultVal int64) int64 {
 	if v, err := b.Int64(key); err == nil {
 		return v
 	}
 	return defaultVal
 }
 
-func (b *bhojpurAppConfig) DefaultBool(key string, defaultVal bool) bool {
+func (b *webAppConfig) DefaultBool(key string, defaultVal bool) bool {
 	if v, err := b.Bool(key); err == nil {
 		return v
 	}
 	return defaultVal
 }
 
-func (b *bhojpurAppConfig) DefaultFloat(key string, defaultVal float64) float64 {
+func (b *webAppConfig) DefaultFloat(key string, defaultVal float64) float64 {
 	if v, err := b.Float(key); err == nil {
 		return v
 	}
 	return defaultVal
 }
 
-func (b *bhojpurAppConfig) DIY(key string) (interface{}, error) {
+func (b *webAppConfig) DIY(key string) (interface{}, error) {
 	return b.innerConfig.DIY(key)
 }
 
-func (b *bhojpurAppConfig) GetSection(section string) (map[string]string, error) {
+func (b *webAppConfig) GetSection(section string) (map[string]string, error) {
 	return b.innerConfig.GetSection(section)
 }
 
-func (b *bhojpurAppConfig) SaveConfigFile(filename string) error {
+func (b *webAppConfig) SaveConfigFile(filename string) error {
 	return b.innerConfig.SaveConfigFile(filename)
 }

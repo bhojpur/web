@@ -1,5 +1,25 @@
 package config
 
+// Copyright (c) 2018 Bhojpur Consulting Private Limited, India. All rights reserved.
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 // Usage:
 //  import "github.com/bhojpur/web/pkg/core/config"
 // Examples.
@@ -36,8 +56,8 @@ import (
 	"time"
 )
 
-// Configer defines how to get and set value from configuration raw data.
-type Configer interface {
+// Configure defines how to get and set value from configuration raw data.
+type Configure interface {
 	// support section::key type in given key when using ini type.
 	Set(key, val string) error
 
@@ -64,23 +84,23 @@ type Configer interface {
 	GetSection(section string) (map[string]string, error)
 
 	Unmarshaler(prefix string, obj interface{}, opt ...DecodeOption) error
-	Sub(key string) (Configer, error)
+	Sub(key string) (Configure, error)
 	OnChange(key string, fn func(value string))
 	SaveConfigFile(filename string) error
 }
 
-type BaseConfiger struct {
+type BaseConfigure struct {
 	// The reader should support key like "a.b.c"
 	reader func(ctx context.Context, key string) (string, error)
 }
 
-func NewBaseConfiger(reader func(ctx context.Context, key string) (string, error)) BaseConfiger {
-	return BaseConfiger{
+func NewBaseConfigure(reader func(ctx context.Context, key string) (string, error)) BaseConfigure {
+	return BaseConfigure{
 		reader: reader,
 	}
 }
 
-func (c *BaseConfiger) Int(key string) (int, error) {
+func (c *BaseConfigure) Int(key string) (int, error) {
 	res, err := c.reader(context.TODO(), key)
 	if err != nil {
 		return 0, err
@@ -88,7 +108,7 @@ func (c *BaseConfiger) Int(key string) (int, error) {
 	return strconv.Atoi(res)
 }
 
-func (c *BaseConfiger) Int64(key string) (int64, error) {
+func (c *BaseConfigure) Int64(key string) (int64, error) {
 	res, err := c.reader(context.TODO(), key)
 	if err != nil {
 		return 0, err
@@ -96,7 +116,7 @@ func (c *BaseConfiger) Int64(key string) (int64, error) {
 	return strconv.ParseInt(res, 10, 64)
 }
 
-func (c *BaseConfiger) Bool(key string) (bool, error) {
+func (c *BaseConfigure) Bool(key string) (bool, error) {
 	res, err := c.reader(context.TODO(), key)
 	if err != nil {
 		return false, err
@@ -104,7 +124,7 @@ func (c *BaseConfiger) Bool(key string) (bool, error) {
 	return ParseBool(res)
 }
 
-func (c *BaseConfiger) Float(key string) (float64, error) {
+func (c *BaseConfigure) Float(key string) (float64, error) {
 	res, err := c.reader(context.TODO(), key)
 	if err != nil {
 		return 0, err
@@ -114,7 +134,7 @@ func (c *BaseConfiger) Float(key string) (float64, error) {
 
 // DefaultString returns the string value for a given key.
 // if err != nil or value is empty return defaultval
-func (c *BaseConfiger) DefaultString(key string, defaultVal string) string {
+func (c *BaseConfigure) DefaultString(key string, defaultVal string) string {
 	if res, err := c.String(key); res != "" && err == nil {
 		return res
 	}
@@ -123,47 +143,47 @@ func (c *BaseConfiger) DefaultString(key string, defaultVal string) string {
 
 // DefaultStrings returns the []string value for a given key.
 // if err != nil return defaultval
-func (c *BaseConfiger) DefaultStrings(key string, defaultVal []string) []string {
+func (c *BaseConfigure) DefaultStrings(key string, defaultVal []string) []string {
 	if res, err := c.Strings(key); len(res) > 0 && err == nil {
 		return res
 	}
 	return defaultVal
 }
 
-func (c *BaseConfiger) DefaultInt(key string, defaultVal int) int {
+func (c *BaseConfigure) DefaultInt(key string, defaultVal int) int {
 	if res, err := c.Int(key); err == nil {
 		return res
 	}
 	return defaultVal
 }
 
-func (c *BaseConfiger) DefaultInt64(key string, defaultVal int64) int64 {
+func (c *BaseConfigure) DefaultInt64(key string, defaultVal int64) int64 {
 	if res, err := c.Int64(key); err == nil {
 		return res
 	}
 	return defaultVal
 }
 
-func (c *BaseConfiger) DefaultBool(key string, defaultVal bool) bool {
+func (c *BaseConfigure) DefaultBool(key string, defaultVal bool) bool {
 	if res, err := c.Bool(key); err == nil {
 		return res
 	}
 	return defaultVal
 }
-func (c *BaseConfiger) DefaultFloat(key string, defaultVal float64) float64 {
+func (c *BaseConfigure) DefaultFloat(key string, defaultVal float64) float64 {
 	if res, err := c.Float(key); err == nil {
 		return res
 	}
 	return defaultVal
 }
 
-func (c *BaseConfiger) String(key string) (string, error) {
+func (c *BaseConfigure) String(key string) (string, error) {
 	return c.reader(context.TODO(), key)
 }
 
 // Strings returns the []string value for a given key.
 // Return nil if config value does not exist or is empty.
-func (c *BaseConfiger) Strings(key string) ([]string, error) {
+func (c *BaseConfigure) Strings(key string) ([]string, error) {
 	res, err := c.String(key)
 	if err != nil || res == "" {
 		return nil, err
@@ -171,18 +191,18 @@ func (c *BaseConfiger) Strings(key string) ([]string, error) {
 	return strings.Split(res, ";"), nil
 }
 
-func (c *BaseConfiger) Sub(key string) (Configer, error) {
+func (c *BaseConfigure) Sub(key string) (Configure, error) {
 	return nil, errors.New("unsupported operation")
 }
 
-func (c *BaseConfiger) OnChange(key string, fn func(value string)) {
+func (c *BaseConfigure) OnChange(key string, fn func(value string)) {
 	// do nothing
 }
 
-// Config is the adapter interface for parsing config file to get raw data to Configer.
+// Config is the adapter interface for parsing config file to get raw data to Configure.
 type Config interface {
-	Parse(key string) (Configer, error)
-	ParseData(data []byte) (Configer, error)
+	Parse(key string) (Configure, error)
+	ParseData(data []byte) (Configure, error)
 }
 
 var adapters = make(map[string]Config)
@@ -202,7 +222,7 @@ func Register(name string, adapter Config) {
 
 // NewConfig adapterName is ini/json/xml/yaml.
 // filename is the config file path.
-func NewConfig(adapterName, filename string) (Configer, error) {
+func NewConfig(adapterName, filename string) (Configure, error) {
 	adapter, ok := adapters[adapterName]
 	if !ok {
 		return nil, fmt.Errorf("config: unknown adaptername %q (forgotten import?)", adapterName)
@@ -212,7 +232,7 @@ func NewConfig(adapterName, filename string) (Configer, error) {
 
 // NewConfigData adapterName is ini/json/xml/yaml.
 // data is the config data.
-func NewConfigData(adapterName string, data []byte) (Configer, error) {
+func NewConfigData(adapterName string, data []byte) (Configure, error) {
 	adapter, ok := adapters[adapterName]
 	if !ok {
 		return nil, fmt.Errorf("config: unknown adaptername %q (forgotten import?)", adapterName)

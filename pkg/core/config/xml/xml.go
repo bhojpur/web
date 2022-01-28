@@ -1,6 +1,26 @@
 package xml
 
-// Package xml for config provider.
+// Copyright (c) 2018 Bhojpur Consulting Private Limited, India. All rights reserved.
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
+// It is for config provider.
 //
 // depend on github.com/bhojpur/web/pkg/core/x2j.
 //
@@ -38,7 +58,7 @@ import (
 type Config struct{}
 
 // Parse returns a ConfigContainer with parsed xml config map.
-func (xc *Config) Parse(filename string) (config.Configer, error) {
+func (xc *Config) Parse(filename string) (config.Configure, error) {
 	context, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
@@ -48,7 +68,7 @@ func (xc *Config) Parse(filename string) (config.Configer, error) {
 }
 
 // ParseData xml data
-func (xc *Config) ParseData(data []byte) (config.Configer, error) {
+func (xc *Config) ParseData(data []byte) (config.Configure, error) {
 	x := &ConfigContainer{data: make(map[string]interface{})}
 
 	d, err := x2j.DocToMap(string(data))
@@ -79,7 +99,7 @@ func (c *ConfigContainer) Unmarshaler(prefix string, obj interface{}, opt ...con
 	return mapstructure.Decode(sub, obj)
 }
 
-func (c *ConfigContainer) Sub(key string) (config.Configer, error) {
+func (c *ConfigContainer) Sub(key string) (config.Configure, error) {
 	sub, err := c.sub(key)
 	if err != nil {
 		return nil, err

@@ -1,14 +1,34 @@
 package engine
 
+// Copyright (c) 2018 Bhojpur Consulting Private Limited, India. All rights reserved.
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 import (
 	"encoding/json"
 	"mime"
 	"net/http"
 	"path/filepath"
 
-	logs "github.com/bhojpur/logger/pkg/engine"
+	logsvr "github.com/bhojpur/logger/pkg/engine"
 	session "github.com/bhojpur/session/pkg/engine"
-	"github.com/bhojpur/web/pkg/context"
+	ctxsvr "github.com/bhojpur/web/pkg/context"
 )
 
 // register MIME type with content type
@@ -38,7 +58,7 @@ func registerDefaultErrorHandler() error {
 	}
 	for e, h := range m {
 		if _, ok := ErrorMaps[e]; !ok {
-			ErrorHandler(e, h)
+			logsvr.ErrorHandler(e, h)
 		}
 	}
 	return nil
@@ -76,9 +96,9 @@ func registerSession() error {
 
 func registerTemplate() error {
 	defer lockViewPaths()
-	if err := AddViewPath(BasConfig.WebConfig.ViewsPath); err != nil {
+	if err := ctxsvr.AddViewPath(BasConfig.WebConfig.ViewsPath); err != nil {
 		if BasConfig.RunMode == DEV {
-			logs.Warn(err)
+			logsvr.Warn(err)
 		}
 		return err
 	}
@@ -87,7 +107,7 @@ func registerTemplate() error {
 
 func registerGzip() error {
 	if BasConfig.EnableGzip {
-		context.InitGzip(
+		ctxsvr.InitGzip(
 			AppConfig.DefaultInt("gzipMinLength", -1),
 			AppConfig.DefaultInt("gzipCompressLevel", -1),
 			AppConfig.DefaultStrings("includedMethods", []string{"GET"}),

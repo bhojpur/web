@@ -33,7 +33,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var loadCmdOpts struct {
+var perftestCmdOpts struct {
 	NumRequests int
 	Concurrent  int
 	KeepAlive   bool
@@ -42,17 +42,17 @@ var loadCmdOpts struct {
 	SecureTLS   bool
 }
 
-// loadCmd represents the load command
-var loadCmd = &cobra.Command{
-	Use:   "load",
-	Short: "HTTP load testing of your web applications and/or services",
+// perftestCmd represents the perftest command
+var perftestCmd = &cobra.Command{
+	Use:   "perftest",
+	Short: "Execute performance tests over servers, applications or services",
 	Run: func(cmd *cobra.Command, args []string) {
 		testing(args)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(loadCmd)
+	rootCmd.AddCommand(perftestCmd)
 
 	var numRequests int
 	webNumRequests := os.Getenv("WEB_NUM_REQUESTS")
@@ -84,12 +84,12 @@ func init() {
 	if webSecureTLS == "" {
 		secureTLS = false
 	}
-	loadCmd.PersistentFlags().IntVar(&loadCmdOpts.NumRequests, "num-requests", numRequests, "Number of requests to make")
-	loadCmd.PersistentFlags().IntVar(&loadCmdOpts.Concurrent, "concurrent", concurrent, "Number of concurrent connections to make")
-	loadCmd.PersistentFlags().BoolVar(&loadCmdOpts.KeepAlive, "keep-alive", keepAlive, "Use keep alive connection")
-	loadCmd.PersistentFlags().StringArrayVar(&loadCmdOpts.Headers, "header", headers, "Header to include in request (can be used multiple times)")
-	loadCmd.PersistentFlags().BoolVar(&loadCmdOpts.KeepAlive, "no-gzip", noGzip, "Disable gzip accept encoding")
-	loadCmd.PersistentFlags().BoolVar(&loadCmdOpts.KeepAlive, "secure-tls", secureTLS, "Validate TLS/SSL certificates")
+	perftestCmd.PersistentFlags().IntVar(&perftestCmdOpts.NumRequests, "num-requests", numRequests, "Number of requests to make")
+	perftestCmd.PersistentFlags().IntVar(&perftestCmdOpts.Concurrent, "concurrent", concurrent, "Number of concurrent connections to make")
+	perftestCmd.PersistentFlags().BoolVar(&perftestCmdOpts.KeepAlive, "keep-alive", keepAlive, "Use keep alive connection")
+	perftestCmd.PersistentFlags().StringArrayVar(&perftestCmdOpts.Headers, "header", headers, "Header to include in request (can be used multiple times)")
+	perftestCmd.PersistentFlags().BoolVar(&perftestCmdOpts.KeepAlive, "no-gzip", noGzip, "Disable gzip accept encoding")
+	perftestCmd.PersistentFlags().BoolVar(&perftestCmdOpts.KeepAlive, "secure-tls", secureTLS, "Validate TLS/SSL certificates")
 }
 
 type result struct {
@@ -142,7 +142,7 @@ func generateRequests(target string, headers []string, numRequests int) {
 		os.Exit(1)
 	}
 
-	if !loadCmdOpts.NoGzip {
+	if !perftestCmdOpts.NoGzip {
 		request.Header.Add("Accept-Encoding", "gzip")
 	}
 
@@ -197,20 +197,20 @@ func testing(args []string) {
 	resultChan = make(chan *result)
 	summaryChan = make(chan *Summary)
 	transport := &http.Transport{
-		DisableKeepAlives:   !loadCmdOpts.KeepAlive,
-		MaxIdleConnsPerHost: loadCmdOpts.Concurrent,
-		TLSClientConfig:     &tls.Config{InsecureSkipVerify: !loadCmdOpts.SecureTLS},
+		DisableKeepAlives:   !perftestCmdOpts.KeepAlive,
+		MaxIdleConnsPerHost: perftestCmdOpts.Concurrent,
+		TLSClientConfig:     &tls.Config{InsecureSkipVerify: !perftestCmdOpts.SecureTLS},
 		DisableCompression:  true,
 	}
 	client = &http.Client{Transport: transport}
 
 	startTime := time.Now()
 
-	for i := 0; i < loadCmdOpts.Concurrent; i++ {
+	for i := 0; i < perftestCmdOpts.Concurrent; i++ {
 		go doRequests()
 	}
-	go generateRequests(target, loadCmdOpts.Headers, loadCmdOpts.NumRequests)
-	go summarizeResults(loadCmdOpts.NumRequests, startTime)
+	go generateRequests(target, perftestCmdOpts.Headers, perftestCmdOpts.NumRequests)
+	go summarizeResults(perftestCmdOpts.NumRequests, startTime)
 
 	summary := <-summaryChan
 

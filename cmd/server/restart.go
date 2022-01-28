@@ -26,25 +26,25 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// appCmd represents the server/app command
-var appCmd = &cobra.Command{
-	Use:   "app",
-	Short: "Application lifecycle management tool",
+// restartCmd represents the restart command
+var restartCmd = &cobra.Command{
+	Use:   "restart",
+	Short: "To restart a distributed server, application or service instance",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("app called")
+		fmt.Println("restart called")
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(appCmd)
+	rootCmd.AddCommand(restartCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// server/appCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// restartCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// server/appCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// restartCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

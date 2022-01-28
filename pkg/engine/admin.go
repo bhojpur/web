@@ -1,16 +1,36 @@
 package engine
 
+// Copyright (c) 2018 Bhojpur Consulting Private Limited, India. All rights reserved.
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 import (
 	"fmt"
 	"net/http"
 	"reflect"
 	"time"
 
-	logs "github.com/bhojpur/logger/pkg/engine"
+	logsvr "github.com/bhojpur/logger/pkg/engine"
 )
 
-// BeeAdminApp is the default adminApp used by admin module.
-var beeAdminApp *adminApp
+// webAdminApp is the default adminApp used by admin module.
+var webAdminApp *adminApp
 
 // FilterMonitorFunc is default monitor filter when admin module is enable.
 // if this func returns, admin module records qps for this request by condition of this function logic.
@@ -74,7 +94,7 @@ func (admin *adminApp) Run() {
 	// if len(task.AdminTaskList) > 0 {
 	// 	task.StartTask()
 	// }
-	logs.Warning("now we don't start tasks here, if you use task module," +
+	logsvr.Warning("now we don't start tasks here, if you use task module," +
 		" please invoke task.StartTask, or task will not be executed")
 
 	addr := BasConfig.Listen.AdminAddr
@@ -83,7 +103,7 @@ func (admin *adminApp) Run() {
 		addr = fmt.Sprintf("%s:%d", BasConfig.Listen.AdminAddr, BasConfig.Listen.AdminPort)
 	}
 
-	logs.Info("Admin server Running on %s", addr)
+	logsvr.Info("Admin server Running on %s", addr)
 
 	admin.HttpServer.Run(addr)
 }
@@ -94,19 +114,19 @@ func registerAdmin() error {
 		c := &adminController{
 			servers: make([]*HttpServer, 0, 2),
 		}
-		beeAdminApp = &adminApp{
+		webAdminApp = &adminApp{
 			HttpServer: NewHttpServerWithCfg(BasConfig),
 		}
 		// keep in mind that all data should be html escaped to avoid XSS attack
-		beeAdminApp.Router("/", c, "get:AdminIndex")
-		beeAdminApp.Router("/qps", c, "get:QpsIndex")
-		beeAdminApp.Router("/prof", c, "get:ProfIndex")
-		beeAdminApp.Router("/healthcheck", c, "get:Healthcheck")
-		beeAdminApp.Router("/task", c, "get:TaskStatus")
-		beeAdminApp.Router("/listconf", c, "get:ListConf")
-		beeAdminApp.Router("/metrics", c, "get:PrometheusMetrics")
+		webAdminApp.Router("/", c, "get:AdminIndex")
+		webAdminApp.Router("/qps", c, "get:QpsIndex")
+		webAdminApp.Router("/prof", c, "get:ProfIndex")
+		webAdminApp.Router("/healthcheck", c, "get:Healthcheck")
+		webAdminApp.Router("/task", c, "get:TaskStatus")
+		webAdminApp.Router("/listconf", c, "get:ListConf")
+		webAdminApp.Router("/metrics", c, "get:PrometheusMetrics")
 
-		go beeAdminApp.Run()
+		go webAdminApp.Run()
 	}
 	return nil
 }

@@ -26,6 +26,7 @@ import (
 	"os"
 
 	"github.com/bhojpur/web/pkg/engine"
+	"github.com/bhojpur/web/pkg/synthesis"
 )
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -37,8 +38,20 @@ func namasteHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	router := engine.NewRouter()
+	var assetfs *synthesis.AssetFS
+	http.Handle("/",
+	http.FileServer(
+		&synthesis.AssetFS{
+			Asset: views.Asset,
+			AssetDir: views.AssetDir,
+			AssetInfo: views.AssetInfo,
+			Prefix: "data",
+			Fallback: "index.html",
+		}))
+}
 
+func web_router()
+	var router = engine.WebEngine
 	router.Get("/", http.HandlerFunc(indexHandler))
 	router.Get("/अभिवादन/:नाम", http.HandlerFunc(namasteHandler))
 	http.Handle("/", router)

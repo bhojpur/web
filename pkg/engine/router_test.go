@@ -1,5 +1,25 @@
 package engine
 
+// Copyright (c) 2018 Bhojpur Consulting Private Limited, India. All rights reserved.
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 import (
 	"bytes"
 	"net/http"
@@ -7,7 +27,7 @@ import (
 	"strings"
 	"testing"
 
-	logs "github.com/bhojpur/logger/pkg/engine"
+	logsvr "github.com/bhojpur/logger/pkg/engine"
 
 	"github.com/bhojpur/web/pkg/context"
 )
@@ -78,10 +98,10 @@ func TestUrlFor(t *testing.T) {
 	handler.Add("/api/list", &TestController{}, "*:List")
 	handler.Add("/person/:last/:first", &TestController{}, "*:Param")
 	if a := handler.URLFor("TestController.List"); a != "/api/list" {
-		logs.Info(a)
+		logsvr.Info(a)
 		t.Errorf("TestController.List must equal to /api/list")
 	}
-	if a := handler.URLFor("TestController.Param", ":last", "xie", ":first", "bhoj"); a != "/person/pur/bhoj" {
+	if a := handler.URLFor("TestController.Param", ":last", "pur", ":first", "bhoj"); a != "/person/pur/bhoj" {
 		t.Errorf("TestController.Param must equal to /person/pur/bhoj, but get " + a)
 	}
 }
@@ -104,24 +124,24 @@ func TestUrlFor2(t *testing.T) {
 	handler.Add("/v1/:v(.+)_cms/ttt_:id(.+)_:page(.+).html", &TestController{}, "*:Param")
 	handler.Add("/:year:int/:month:int/:title/:entid", &TestController{})
 	if handler.URLFor("TestController.GetURL", ":username", "bhojpur") != "/v1/bhojpur/edit" {
-		logs.Info(handler.URLFor("TestController.GetURL"))
+		logsvr.Info(handler.URLFor("TestController.GetURL"))
 		t.Errorf("TestController.List must equal to /v1/bhojpur/edit")
 	}
 
 	if handler.URLFor("TestController.List", ":v", "za", ":id", "12", ":page", "123") !=
 		"/v1/za/cms_12_123.html" {
-		logs.Info(handler.URLFor("TestController.List"))
+		logsvr.Info(handler.URLFor("TestController.List"))
 		t.Errorf("TestController.List must equal to /v1/za/cms_12_123.html")
 	}
 	if handler.URLFor("TestController.Param", ":v", "za", ":id", "12", ":page", "123") !=
 		"/v1/za_cms/ttt_12_123.html" {
-		logs.Info(handler.URLFor("TestController.Param"))
+		logsvr.Info(handler.URLFor("TestController.Param"))
 		t.Errorf("TestController.List must equal to /v1/za_cms/ttt_12_123.html")
 	}
 	if handler.URLFor("TestController.Get", ":year", "1111", ":month", "11",
 		":title", "aaaa", ":entid", "aaaa") !=
 		"/1111/11/aaaa/aaaa" {
-		logs.Info(handler.URLFor("TestController.Get"))
+		logsvr.Info(handler.URLFor("TestController.Get"))
 		t.Errorf("TestController.Get must equal to /1111/11/aaaa/aaaa")
 	}
 }

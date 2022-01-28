@@ -56,17 +56,17 @@ func NewContext() *Context {
 	}
 }
 
-// Context Http request context struct including BeegoInput, BeegoOutput, http.Request and http.ResponseWriter.
-// BeegoInput and BeegoOutput provides an api to operate request and response more easily.
+// Context Http request context struct including BhojpurInput, BhojpurOutput, http.Request and http.ResponseWriter.
+// BhojpurInput and BhojpurOutput provides an api to operate request and response more easily.
 type Context struct {
-	Input          *BeegoInput
-	Output         *BeegoOutput
+	Input          *BhojpurInput
+	Output         *BhojpurOutput
 	Request        *http.Request
 	ResponseWriter *Response
 	_xsrfToken     string
 }
 
-// Reset initializes Context, BeegoInput and BeegoOutput
+// Reset initializes Context, BhojpurInput and BhojpurOutput
 func (ctx *Context) Reset(rw http.ResponseWriter, r *http.Request) {
 	ctx.Request = r
 	if ctx.ResponseWriter == nil {
@@ -84,7 +84,7 @@ func (ctx *Context) Redirect(status int, localurl string) {
 }
 
 // Abort stops the request.
-// If beego.ErrorMaps exists, panic body.
+// If Bhojpur.ErrorMaps exists, panic body.
 func (ctx *Context) Abort(status int, body string) {
 	ctx.Output.SetStatus(status)
 	panic(body)
@@ -96,13 +96,13 @@ func (ctx *Context) WriteString(content string) {
 }
 
 // GetCookie gets a cookie from a request for a given key.
-// (Alias of BeegoInput.Cookie)
+// (Alias of BhojpurInput.Cookie)
 func (ctx *Context) GetCookie(key string) string {
 	return ctx.Input.Cookie(key)
 }
 
 // SetCookie sets a cookie for a response.
-// (Alias of BeegoOutput.Cookie)
+// (Alias of BhojpurOutput.Cookie)
 func (ctx *Context) SetCookie(name string, value string, others ...interface{}) {
 	ctx.Output.Cookie(name, value, others...)
 }

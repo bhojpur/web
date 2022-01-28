@@ -18,16 +18,16 @@ import (
 )
 
 var (
-	bhojpurTplFuncMap         = make(template.FuncMap)
-	beeViewPathTemplateLocked = false
-	// beeViewPathTemplates caching map and supported template file extensions per view
-	beeViewPathTemplates = make(map[string]map[string]*template.Template)
+	webTplFuncMap             = make(template.FuncMap)
+	webViewPathTemplateLocked = false
+	// webViewPathTemplates caching map and supported template file extensions per view
+	webViewPathTemplates = make(map[string]map[string]*template.Template)
 	templatesLock        sync.RWMutex
-	// beeTemplateExt stores the template extension which will build
-	beeTemplateExt = []string{"tpl", "html", "gohtml"}
-	// beeTemplatePreprocessors stores associations of extension -> preprocessor handler
-	beeTemplateEngines = map[string]templatePreProcessor{}
-	beeTemplateFS      = defaultFSFunc
+	// webTemplateExt stores the template extension which will build
+	webTemplateExt = []string{"tpl", "html", "gohtml"}
+	// webTemplatePreprocessors stores associations of extension -> preprocessor handler
+	webTemplateEngines = map[string]templatePreProcessor{}
+	webTemplateFS      = defaultFSFunc
 )
 
 // ExecuteTemplate applies the template with name  to the specified data object,
@@ -45,8 +45,8 @@ func ExecuteViewPathTemplate(wr io.Writer, name string, viewPath string, data in
 		templatesLock.RLock()
 		defer templatesLock.RUnlock()
 	}
-	if beeTemplates, ok := beeViewPathTemplates[viewPath]; ok {
-		if t, ok := beeTemplates[name]; ok {
+	if webTemplates, ok := webViewPathTemplates[viewPath]; ok {
+		if t, ok := webTemplates[name]; ok {
 			var err error
 			if t.Lookup(name) != nil {
 				err = t.ExecuteTemplate(wr, name, data)
@@ -64,37 +64,37 @@ func ExecuteViewPathTemplate(wr io.Writer, name string, viewPath string, data in
 }
 
 func init() {
-	bhojpurTplFuncMap["dateformat"] = DateFormat
-	bhojpurTplFuncMap["date"] = Date
-	bhojpurTplFuncMap["compare"] = Compare
-	bhojpurTplFuncMap["compare_not"] = CompareNot
-	bhojpurTplFuncMap["not_nil"] = NotNil
-	bhojpurTplFuncMap["not_null"] = NotNil
-	bhojpurTplFuncMap["substr"] = Substr
-	bhojpurTplFuncMap["html2str"] = HTML2str
-	bhojpurTplFuncMap["str2html"] = Str2html
-	bhojpurTplFuncMap["htmlquote"] = Htmlquote
-	bhojpurTplFuncMap["htmlunquote"] = Htmlunquote
-	bhojpurTplFuncMap["renderform"] = RenderForm
-	bhojpurTplFuncMap["assets_js"] = AssetsJs
-	bhojpurTplFuncMap["assets_css"] = AssetsCSS
-	bhojpurTplFuncMap["config"] = GetConfig
-	bhojpurTplFuncMap["map_get"] = MapGet
+	webTplFuncMap["dateformat"] = DateFormat
+	webTplFuncMap["date"] = Date
+	webTplFuncMap["compare"] = Compare
+	webTplFuncMap["compare_not"] = CompareNot
+	webTplFuncMap["not_nil"] = NotNil
+	webTplFuncMap["not_null"] = NotNil
+	webTplFuncMap["substr"] = Substr
+	webTplFuncMap["html2str"] = HTML2str
+	webTplFuncMap["str2html"] = Str2html
+	webTplFuncMap["htmlquote"] = Htmlquote
+	webTplFuncMap["htmlunquote"] = Htmlunquote
+	webTplFuncMap["renderform"] = RenderForm
+	webTplFuncMap["assets_js"] = AssetsJs
+	webTplFuncMap["assets_css"] = AssetsCSS
+	webTplFuncMap["config"] = GetConfig
+	webTplFuncMap["map_get"] = MapGet
 
 	// Comparisons
-	bhojpurTplFuncMap["eq"] = eq // ==
-	bhojpurTplFuncMap["ge"] = ge // >=
-	bhojpurTplFuncMap["gt"] = gt // >
-	bhojpurTplFuncMap["le"] = le // <=
-	bhojpurTplFuncMap["lt"] = lt // <
-	bhojpurTplFuncMap["ne"] = ne // !=
+	webTplFuncMap["eq"] = eq // ==
+	webTplFuncMap["ge"] = ge // >=
+	webTplFuncMap["gt"] = gt // >
+	webTplFuncMap["le"] = le // <=
+	webTplFuncMap["lt"] = lt // <
+	webTplFuncMap["ne"] = ne // !=
 
-	bhojpurTplFuncMap["urlfor"] = URLFor // build a URL to match a Controller and it's method
+	webTplFuncMap["urlfor"] = URLFor // build a URL to match a Controller and it's method
 }
 
 // AddFuncMap let user to register a func in the template.
 func AddFuncMap(key string, fn interface{}) error {
-	bhojpurTplFuncMap[key] = fn
+	webTplFuncMap[key] = fn
 	return nil
 }
 
@@ -130,7 +130,7 @@ func (tf *templateFile) visit(paths string, f os.FileInfo, err error) error {
 
 // HasTemplateExt return this path contains supported template extension of Bhojpur.NET Platform application or not.
 func HasTemplateExt(paths string) bool {
-	for _, v := range beeTemplateExt {
+	for _, v := range webTemplateExt {
 		if strings.HasSuffix(paths, "."+v) {
 			return true
 		}
@@ -140,37 +140,37 @@ func HasTemplateExt(paths string) bool {
 
 // AddTemplateExt add new extension for template.
 func AddTemplateExt(ext string) {
-	for _, v := range beeTemplateExt {
+	for _, v := range webTemplateExt {
 		if v == ext {
 			return
 		}
 	}
-	beeTemplateExt = append(beeTemplateExt, ext)
+	webTemplateExt = append(webTemplateExt, ext)
 }
 
 // AddViewPath adds a new path to the supported view paths.
 //Can later be used by setting a controller ViewPath to this folder
 //will panic if called after bhojpur.Run()
 func AddViewPath(viewPath string) error {
-	if beeViewPathTemplateLocked {
-		if _, exist := beeViewPathTemplates[viewPath]; exist {
+	if webViewPathTemplateLocked {
+		if _, exist := webViewPathTemplates[viewPath]; exist {
 			return nil //Ignore if viewpath already exists
 		}
 		panic("Can not add new view paths after bhojpur.Run()")
 	}
-	beeViewPathTemplates[viewPath] = make(map[string]*template.Template)
+	webViewPathTemplates[viewPath] = make(map[string]*template.Template)
 	return BuildTemplate(viewPath)
 }
 
 func lockViewPaths() {
-	beeViewPathTemplateLocked = true
+	webViewPathTemplateLocked = true
 }
 
 // BuildTemplate will build all template files in a directory.
 // it makes Bhojpur.NET Platform can render any template file in view directory.
 func BuildTemplate(dir string, files ...string) error {
 	var err error
-	fs := beeTemplateFS()
+	fs := webTemplateFS()
 	f, err := fs.Open(dir)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -180,7 +180,7 @@ func BuildTemplate(dir string, files ...string) error {
 	}
 	defer f.Close()
 
-	beeTemplates, ok := beeViewPathTemplates[dir]
+	webTemplates, ok := webViewPathTemplates[dir]
 	if !ok {
 		panic("Unknown view path: " + dir)
 	}
@@ -204,8 +204,8 @@ func BuildTemplate(dir string, files ...string) error {
 				var t *template.Template
 				if len(ext) == 0 {
 					t, err = getTemplate(self.root, fs, file, v...)
-				} else if fn, ok := beeTemplateEngines[ext[1:]]; ok {
-					t, err = fn(self.root, file, bhojpurTplFuncMap)
+				} else if fn, ok := webTemplateEngines[ext[1:]]; ok {
+					t, err = fn(self.root, file, webTplFuncMap)
 				} else {
 					t, err = getTemplate(self.root, fs, file, v...)
 				}
@@ -214,7 +214,7 @@ func BuildTemplate(dir string, files ...string) error {
 					templatesLock.Unlock()
 					return err
 				}
-				beeTemplates[file] = t
+				webTemplates[file] = t
 				templatesLock.Unlock()
 			}
 		}
@@ -267,7 +267,7 @@ func getTplDeep(root string, fs http.FileSystem, file string, parent string, t *
 }
 
 func getTemplate(root string, fs http.FileSystem, file string, others ...string) (t *template.Template, err error) {
-	t = template.New(file).Delims(BasConfig.WebConfig.TemplateLeft, BasConfig.WebConfig.TemplateRight).Funcs(bhojpurTplFuncMap)
+	t = template.New(file).Delims(BasConfig.WebConfig.TemplateLeft, BasConfig.WebConfig.TemplateRight).Funcs(webTplFuncMap)
 	var subMods [][]string
 	t, subMods, err = getTplDeep(root, fs, file, "", t)
 	if err != nil {
@@ -387,6 +387,6 @@ func DelStaticPath(url string) *HttpServer {
 // AddTemplateEngine add a new templatePreProcessor which support extension
 func AddTemplateEngine(extension string, fn templatePreProcessor) *HttpServer {
 	AddTemplateExt(extension)
-	beeTemplateEngines[extension] = fn
+	webTemplateEngines[extension] = fn
 	return BhojpurApp
 }

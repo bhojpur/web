@@ -75,9 +75,7 @@ import (
 	"time"
 
 	imageutl "github.com/bhojpur/image/pkg/synthesis"
-
 	logs "github.com/bhojpur/logger/pkg/engine"
-
 	token "github.com/bhojpur/token/pkg/utils"
 	"github.com/bhojpur/web/pkg/context"
 	"github.com/bhojpur/web/pkg/engine"
@@ -99,7 +97,7 @@ const (
 
 // Captcha struct
 type Captcha struct {
-	// beego cache store
+	// bhojpur cache store
 	store Storage
 
 	// url prefix for captcha image
@@ -134,7 +132,7 @@ func (c *Captcha) genRandChars() []byte {
 	return token.RandomCreateBytes(c.ChallengeNums, defaultChars...)
 }
 
-// Handler beego filter handler for serve captcha image
+// Handler bhojpur filter handler for serve captcha image
 func (c *Captcha) Handler(ctx *context.Context) {
 	var chars []byte
 

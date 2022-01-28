@@ -3,8 +3,8 @@ package opentracing
 import (
 	"context"
 
-	ctxutil "github.com/bhojpur/web/pkg/context"
-	web "github.com/bhojpur/web/pkg/engine"
+	ctxsvr "github.com/bhojpur/web/pkg/context"
+	websvr "github.com/bhojpur/web/pkg/engine"
 	logKit "github.com/go-kit/kit/log"
 	opentracingKit "github.com/go-kit/kit/tracing/opentracing"
 	"github.com/opentracing/opentracing-go"
@@ -13,11 +13,11 @@ import (
 // FilterChainBuilder provides an extension point that we can support more configurations if necessary
 type FilterChainBuilder struct {
 	// CustomSpanFunc makes users to custom the span.
-	CustomSpanFunc func(span opentracing.Span, ctx *ctxutil.Context)
+	CustomSpanFunc func(span opentracing.Span, ctx *ctxsvr.Context)
 }
 
-func (builder *FilterChainBuilder) FilterChain(next web.FilterFunc) web.FilterFunc {
-	return func(ctx *ctxutil.Context) {
+func (builder *FilterChainBuilder) FilterChain(next websvr.FilterFunc) websvr.FilterFunc {
+	return func(ctx *ctxsvr.Context) {
 		var (
 			spanCtx context.Context
 			span    opentracing.Span
@@ -60,11 +60,11 @@ func (builder *FilterChainBuilder) FilterChain(next web.FilterFunc) web.FilterFu
 	}
 }
 
-func (builder *FilterChainBuilder) operationName(ctx *ctxutil.Context) string {
+func (builder *FilterChainBuilder) operationName(ctx *ctxsvr.Context) string {
 	operationName := ctx.Input.URL()
 	// it means that there is not any span, so we create a span as the root span.
 	// TODO, if we support multiple servers, this need to be changed
-	route, found := web.BhojpurApp.Handlers.FindRouter(ctx)
+	route, found := websvr.BhojpurApp.Handlers.FindRouter(ctx)
 	if found {
 		operationName = ctx.Input.Method() + "#" + route.GetPattern()
 	}

@@ -1,11 +1,31 @@
 package engine
 
+// Copyright (c) 2018 Bhojpur Consulting Private Limited, India. All rights reserved.
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 import (
 	"encoding/json"
 	"reflect"
 	"testing"
 
-	beeJson "github.com/bhojpur/web/pkg/core/config/json"
+	webJson "github.com/bhojpur/web/pkg/core/config/json"
 )
 
 func TestDefaults(t *testing.T) {
@@ -21,7 +41,7 @@ func TestDefaults(t *testing.T) {
 func TestAssignConfig_01(t *testing.T) {
 	_BasConfig := &Config{}
 	_BasConfig.AppName = "bhojpur_test"
-	jcf := &beeJson.JSONConfig{}
+	jcf := &webJson.JSONConfig{}
 	ac, _ := jcf.ParseData([]byte(`{"AppName":"bhojpur_json"}`))
 	assignSingleConfig(_BasConfig, ac)
 	if _BasConfig.AppName != "bhojpur_json" {
@@ -59,7 +79,7 @@ func TestAssignConfig_02(t *testing.T) {
 	configMap["SessionProviderConfig"] = "file"
 	configMap["FileLineNum"] = true
 
-	jcf := &beeJson.JSONConfig{}
+	jcf := &webJson.JSONConfig{}
 	bs, _ = json.Marshal(configMap)
 	ac, _ := jcf.ParseData(bs)
 
@@ -95,7 +115,7 @@ func TestAssignConfig_02(t *testing.T) {
 }
 
 func TestAssignConfig_03(t *testing.T) {
-	jcf := &beeJson.JSONConfig{}
+	jcf := &webJson.JSONConfig{}
 	ac, _ := jcf.ParseData([]byte(`{"AppName":"bhojpur"}`))
 	ac.Set("AppName", "test_app")
 	ac.Set("RunMode", "online")

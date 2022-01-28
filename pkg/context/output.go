@@ -1,5 +1,25 @@
 package context
 
+// Copyright (c) 2018 Bhojpur Consulting Private Limited, India. All rights reserved.
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 import (
 	"bytes"
 	"encoding/json"
@@ -20,34 +40,34 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-// BeegoOutput does work for sending response header.
-type BeegoOutput struct {
+// BhojpurOutput does work for sending response header.
+type BhojpurOutput struct {
 	Context    *Context
 	Status     int
 	EnableGzip bool
 }
 
-// NewOutput returns new BeegoOutput.
+// NewOutput returns new BhojpurOutput.
 // Empty when initialized
-func NewOutput() *BeegoOutput {
-	return &BeegoOutput{}
+func NewOutput() *BhojpurOutput {
+	return &BhojpurOutput{}
 }
 
-// Reset initializes BeegoOutput
-func (output *BeegoOutput) Reset(ctx *Context) {
+// Reset initializes BhojpurOutput
+func (output *BhojpurOutput) Reset(ctx *Context) {
 	output.Context = ctx
 	output.Status = 0
 }
 
 // Header sets response header item string via given key.
-func (output *BeegoOutput) Header(key, val string) {
+func (output *BhojpurOutput) Header(key, val string) {
 	output.Context.ResponseWriter.Header().Set(key, val)
 }
 
 // Body sets the response body content.
 // if EnableGzip, content is compressed.
 // Sends out response body directly.
-func (output *BeegoOutput) Body(content []byte) error {
+func (output *BhojpurOutput) Body(content []byte) error {
 	var encoding string
 	var buf = &bytes.Buffer{}
 	if output.EnableGzip {
@@ -73,7 +93,7 @@ func (output *BeegoOutput) Body(content []byte) error {
 
 // Cookie sets a cookie value via given key.
 // others: used to set a cookie's max age time, path,domain, secure and httponly.
-func (output *BeegoOutput) Cookie(name string, value string, others ...interface{}) {
+func (output *BhojpurOutput) Cookie(name string, value string, others ...interface{}) {
 	var b bytes.Buffer
 	fmt.Fprintf(&b, "%s=%s", sanitizeName(name), sanitizeValue(value))
 
@@ -171,7 +191,7 @@ func errorRenderer(err error) Renderer {
 
 // JSON writes json to the response body.
 // if encoding is true, it converts utf-8 to \u0000 type.
-func (output *BeegoOutput) JSON(data interface{}, hasIndent bool, encoding bool) error {
+func (output *BhojpurOutput) JSON(data interface{}, hasIndent bool, encoding bool) error {
 	output.Header("Content-Type", "application/json; charset=utf-8")
 	var content []byte
 	var err error
@@ -191,7 +211,7 @@ func (output *BeegoOutput) JSON(data interface{}, hasIndent bool, encoding bool)
 }
 
 // YAML writes yaml to the response body.
-func (output *BeegoOutput) YAML(data interface{}) error {
+func (output *BhojpurOutput) YAML(data interface{}) error {
 	output.Header("Content-Type", "application/x-yaml; charset=utf-8")
 	var content []byte
 	var err error
@@ -204,7 +224,7 @@ func (output *BeegoOutput) YAML(data interface{}) error {
 }
 
 // JSONP writes jsonp to the response body.
-func (output *BeegoOutput) JSONP(data interface{}, hasIndent bool) error {
+func (output *BhojpurOutput) JSONP(data interface{}, hasIndent bool) error {
 	output.Header("Content-Type", "application/javascript; charset=utf-8")
 	var content []byte
 	var err error
@@ -230,7 +250,7 @@ func (output *BeegoOutput) JSONP(data interface{}, hasIndent bool) error {
 }
 
 // XML writes xml string to the response body.
-func (output *BeegoOutput) XML(data interface{}, hasIndent bool) error {
+func (output *BhojpurOutput) XML(data interface{}, hasIndent bool) error {
 	output.Header("Content-Type", "application/xml; charset=utf-8")
 	var content []byte
 	var err error
@@ -247,7 +267,7 @@ func (output *BeegoOutput) XML(data interface{}, hasIndent bool) error {
 }
 
 // ServeFormatted serves YAML, XML or JSON, depending on the value of the Accept header
-func (output *BeegoOutput) ServeFormatted(data interface{}, hasIndent bool, hasEncode ...bool) error {
+func (output *BhojpurOutput) ServeFormatted(data interface{}, hasIndent bool, hasEncode ...bool) error {
 	accept := output.Context.Input.Header("Accept")
 	switch accept {
 	case ApplicationYAML:
@@ -261,7 +281,7 @@ func (output *BeegoOutput) ServeFormatted(data interface{}, hasIndent bool, hasE
 
 // Download forces response for download file.
 // Prepares the download response header automatically.
-func (output *BeegoOutput) Download(file string, filename ...string) {
+func (output *BhojpurOutput) Download(file string, filename ...string) {
 	// check get file error, file not found or other error.
 	if _, err := os.Stat(file); err != nil {
 		http.ServeFile(output.Context.ResponseWriter, output.Context.Request, file)
@@ -299,7 +319,7 @@ func (output *BeegoOutput) Download(file string, filename ...string) {
 
 // ContentType sets the content type from ext string.
 // MIME type is given in mime package.
-func (output *BeegoOutput) ContentType(ext string) {
+func (output *BhojpurOutput) ContentType(ext string) {
 	if !strings.HasPrefix(ext, ".") {
 		ext = "." + ext
 	}
@@ -311,61 +331,61 @@ func (output *BeegoOutput) ContentType(ext string) {
 
 // SetStatus sets the response status code.
 // Writes response header directly.
-func (output *BeegoOutput) SetStatus(status int) {
+func (output *BhojpurOutput) SetStatus(status int) {
 	output.Status = status
 }
 
 // IsCachable returns boolean of if this request is cached.
 // HTTP 304 means cached.
-func (output *BeegoOutput) IsCachable() bool {
+func (output *BhojpurOutput) IsCachable() bool {
 	return output.Status >= 200 && output.Status < 300 || output.Status == 304
 }
 
 // IsEmpty returns boolean of if this request is empty.
 // HTTP 201，204 and 304 means empty.
-func (output *BeegoOutput) IsEmpty() bool {
+func (output *BhojpurOutput) IsEmpty() bool {
 	return output.Status == 201 || output.Status == 204 || output.Status == 304
 }
 
 // IsOk returns boolean of if this request was ok.
 // HTTP 200 means ok.
-func (output *BeegoOutput) IsOk() bool {
+func (output *BhojpurOutput) IsOk() bool {
 	return output.Status == 200
 }
 
 // IsSuccessful returns boolean of this request was successful.
 // HTTP 2xx means ok.
-func (output *BeegoOutput) IsSuccessful() bool {
+func (output *BhojpurOutput) IsSuccessful() bool {
 	return output.Status >= 200 && output.Status < 300
 }
 
 // IsRedirect returns boolean of if this request is redirected.
 // HTTP 301,302,307 means redirection.
-func (output *BeegoOutput) IsRedirect() bool {
+func (output *BhojpurOutput) IsRedirect() bool {
 	return output.Status == 301 || output.Status == 302 || output.Status == 303 || output.Status == 307
 }
 
 // IsForbidden returns boolean of if this request is forbidden.
 // HTTP 403 means forbidden.
-func (output *BeegoOutput) IsForbidden() bool {
+func (output *BhojpurOutput) IsForbidden() bool {
 	return output.Status == 403
 }
 
 // IsNotFound returns boolean of if this request is not found.
 // HTTP 404 means not found.
-func (output *BeegoOutput) IsNotFound() bool {
+func (output *BhojpurOutput) IsNotFound() bool {
 	return output.Status == 404
 }
 
 // IsClientError returns boolean of if this request client sends error data.
 // HTTP 4xx means client error.
-func (output *BeegoOutput) IsClientError() bool {
+func (output *BhojpurOutput) IsClientError() bool {
 	return output.Status >= 400 && output.Status < 500
 }
 
 // IsServerError returns boolean of if this server handler errors.
 // HTTP 5xx means server internal error.
-func (output *BeegoOutput) IsServerError() bool {
+func (output *BhojpurOutput) IsServerError() bool {
 	return output.Status >= 500 && output.Status < 600
 }
 
@@ -389,6 +409,6 @@ func stringsToJSON(str string) string {
 }
 
 // Session sets session item value with given key.
-func (output *BeegoOutput) Session(name interface{}, value interface{}) {
+func (output *BhojpurOutput) Session(name interface{}, value interface{}) {
 	output.Context.Input.CruSession.Set(nil, name, value)
 }

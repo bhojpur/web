@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"reflect"
 
-	logs "github.com/bhojpur/logger/pkg/engine"
+	logsvr "github.com/bhojpur/logger/pkg/engine"
 	ctxutl "github.com/bhojpur/web/pkg/context"
 )
 
@@ -30,7 +30,7 @@ func convertParam(param *MethodParam, paramType reflect.Type, ctx *ctxutl.Contex
 
 	reflectValue, err := parseValue(param, paramValue, paramType)
 	if err != nil {
-		logs.Debug(fmt.Sprintf("Error converting param %s to type %s. Value: %v, Error: %s", param.name, paramType, paramValue, err))
+		logsvr.Debug(fmt.Sprintf("Error converting param %s to type %s. Value: %v, Error: %s", param.name, paramType, paramValue, err))
 		ctx.Abort(400, fmt.Sprintf("Invalid parameter %s. Can not convert %v to type %s", param.name, paramValue, paramType))
 	}
 

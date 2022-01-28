@@ -1,5 +1,25 @@
 package prometheus
 
+// Copyright (c) 2018 Bhojpur Consulting Private Limited, India. All rights reserved.
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 import (
 	"strconv"
 	"strings"
@@ -7,9 +27,9 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/bhojpur/web/pkg/context"
-	bhojpur "github.com/bhojpur/web/pkg/engine"
-	web "github.com/bhojpur/web/pkg/engine"
+	webapp "github.com/bhojpur/web/pkg/adapter"
+	ctxsvr "github.com/bhojpur/web/pkg/context"
+	websvr "github.com/bhojpur/web/pkg/engine"
 )
 
 // FilterChainBuilder is an extension point,
@@ -19,14 +39,14 @@ type FilterChainBuilder struct {
 }
 
 // FilterChain returns a FilterFunc. The filter will records some metrics
-func (builder *FilterChainBuilder) FilterChain(next web.FilterFunc) web.FilterFunc {
+func (builder *FilterChainBuilder) FilterChain(next websvr.FilterFunc) websvr.FilterFunc {
 	summaryVec := prometheus.NewSummaryVec(prometheus.SummaryOpts{
 		Name:      "bhojpur",
 		Subsystem: "http_request",
 		ConstLabels: map[string]string{
-			"server":  web.BasConfig.ServerName,
-			"env":     web.BasConfig.RunMode,
-			"appname": web.BasConfig.AppName,
+			"server":  websvr.BasConfig.ServerName,
+			"env":     websvr.BasConfig.RunMode,
+			"appname": websvr.BasConfig.AppName,
 		},
 		Help: "The statistics info for HTTP request",
 	}, []string{"pattern", "method", "status", "duration"})
@@ -35,7 +55,7 @@ func (builder *FilterChainBuilder) FilterChain(next web.FilterFunc) web.FilterFu
 
 	registerBuildInfo()
 
-	return func(ctx *context.Context) {
+	return func(ctx *ctxsvr.Context) {
 		startTime := time.Now()
 		next(ctx)
 		endTime := time.Now()
@@ -49,15 +69,15 @@ func registerBuildInfo() {
 		Subsystem: "build_info",
 		Help:      "The building information",
 		ConstLabels: map[string]string{
-			"appname":        web.BasConfig.AppName,
-			"build_version":  bhojpur.BuildVersion,
-			"build_revision": bhojpur.BuildGitRevision,
-			"build_status":   bhojpur.BuildStatus,
-			"build_tag":      bhojpur.BuildTag,
-			"build_time":     strings.Replace(bhojpur.BuildTime, "--", " ", 1),
-			"go_version":     bhojpur.GoVersion,
-			"git_branch":     bhojpur.GitBranch,
-			"start_time":     time.Now().Format("2006-01-02 15:04:05"),
+			"appname":        websvr.BasConfig.AppName,
+			"build_version":  webapp.BuildVersion,
+			"build_revision": webapp.BuildGitRevision,
+			"build_status":   webapp.BuildStatus,
+			"build_tag":      webapp.BuildTag,
+			"build_time":     strings.Replace(webapp.BuildTime, "--", " ", 1),
+			"go_version":     webapp.GoVersion,
+			"git_branch":     webapp.GitBranch,
+			"start_time":     time.Now().Format("2018-03-26 15:04:05"),
 		},
 	}, []string{})
 
@@ -65,7 +85,7 @@ func registerBuildInfo() {
 	buildInfo.WithLabelValues().Set(1)
 }
 
-func report(dur time.Duration, ctx *context.Context, vec *prometheus.SummaryVec) {
+func report(dur time.Duration, ctx *ctxsvr.Context, vec *prometheus.SummaryVec) {
 	status := ctx.Output.Status
 	ptn := ctx.Input.GetData("RouterPattern").(string)
 	ms := dur / time.Millisecond

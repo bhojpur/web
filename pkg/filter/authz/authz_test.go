@@ -1,5 +1,25 @@
 package authz
 
+// Copyright (c) 2018 Bhojpur Consulting Private Limited, India. All rights reserved.
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 import (
 	"net/http"
 	"net/http/httptest"
@@ -7,12 +27,12 @@ import (
 
 	"github.com/casbin/casbin"
 
-	"github.com/bhojpur/web/pkg/context"
-	web "github.com/bhojpur/web/pkg/engine"
-	"github.com/bhojpur/web/pkg/filter/auth"
+	ctxsvr "github.com/bhojpur/web/pkg/context"
+	websvr "github.com/bhojpur/web/pkg/engine"
+	webauth "github.com/bhojpur/web/pkg/filter/auth"
 )
 
-func testRequest(t *testing.T, handler *web.ControllerRegister, user string, path string, method string, code int) {
+func testRequest(t *testing.T, handler *websvr.ControllerRegister, user string, path string, method string, code int) {
 	r, _ := http.NewRequest(method, path, nil)
 	r.SetBasicAuth(user, "123")
 	w := httptest.NewRecorder()
@@ -24,12 +44,12 @@ func testRequest(t *testing.T, handler *web.ControllerRegister, user string, pat
 }
 
 func TestBasic(t *testing.T) {
-	handler := web.NewControllerRegister()
+	handler := websvr.NewControllerRegister()
 
-	handler.InsertFilter("*", web.BeforeRouter, auth.Basic("alice", "123"))
-	handler.InsertFilter("*", web.BeforeRouter, NewAuthorizer(casbin.NewEnforcer("authz_model.conf", "authz_policy.csv")))
+	handler.InsertFilter("*", websvr.BeforeRouter, webauth.Basic("alice", "123"))
+	handler.InsertFilter("*", websvr.BeforeRouter, NewAuthorizer(casbin.NewEnforcer("authz_model.conf", "authz_policy.csv")))
 
-	handler.Any("*", func(ctx *context.Context) {
+	handler.Any("*", func(ctx *ctxsvr.Context) {
 		ctx.Output.SetStatus(200)
 	})
 
@@ -40,12 +60,12 @@ func TestBasic(t *testing.T) {
 }
 
 func TestPathWildcard(t *testing.T) {
-	handler := web.NewControllerRegister()
+	handler := websvr.NewControllerRegister()
 
-	handler.InsertFilter("*", web.BeforeRouter, auth.Basic("bob", "123"))
-	handler.InsertFilter("*", web.BeforeRouter, NewAuthorizer(casbin.NewEnforcer("authz_model.conf", "authz_policy.csv")))
+	handler.InsertFilter("*", websvr.BeforeRouter, webauth.Basic("bob", "123"))
+	handler.InsertFilter("*", websvr.BeforeRouter, NewAuthorizer(casbin.NewEnforcer("authz_model.conf", "authz_policy.csv")))
 
-	handler.Any("*", func(ctx *context.Context) {
+	handler.Any("*", func(ctx *ctxsvr.Context) {
 		ctx.Output.SetStatus(200)
 	})
 
@@ -65,13 +85,13 @@ func TestPathWildcard(t *testing.T) {
 }
 
 func TestRBAC(t *testing.T) {
-	handler := web.NewControllerRegister()
+	handler := websvr.NewControllerRegister()
 
-	handler.InsertFilter("*", web.BeforeRouter, auth.Basic("cathy", "123"))
+	handler.InsertFilter("*", websvr.BeforeRouter, webauth.Basic("cathy", "123"))
 	e := casbin.NewEnforcer("authz_model.conf", "authz_policy.csv")
-	handler.InsertFilter("*", web.BeforeRouter, NewAuthorizer(e))
+	handler.InsertFilter("*", websvr.BeforeRouter, NewAuthorizer(e))
 
-	handler.Any("*", func(ctx *context.Context) {
+	handler.Any("*", func(ctx *ctxsvr.Context) {
 		ctx.Output.SetStatus(200)
 	})
 

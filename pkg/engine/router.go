@@ -1,5 +1,25 @@
 package engine
 
+// Copyright (c) 2018 Bhojpur Consulting Private Limited, India. All rights reserved.
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 import (
 	"errors"
 	"fmt"
@@ -13,7 +33,7 @@ import (
 
 	logs "github.com/bhojpur/logger/pkg/engine"
 
-	ctxutl "github.com/bhojpur/web/pkg/context"
+	ctxsvr "github.com/bhojpur/web/pkg/context"
 	"github.com/bhojpur/web/pkg/context/param"
 	"github.com/bhojpur/web/pkg/core/utils"
 )
@@ -69,14 +89,14 @@ var (
 
 // FilterHandler is an interface for
 type FilterHandler interface {
-	Filter(*ctxutl.Context) bool
+	Filter(*ctxsvr.Context) bool
 }
 
 // default log filter static file will not show
 type logFilter struct {
 }
 
-func (l *logFilter) Filter(ctx *ctxutl.Context) bool {
+func (l *logFilter) Filter(ctx *ctxsvr.Context) bool {
 	requestPath := path.Clean(ctx.Request.URL.Path)
 	if requestPath == "/favicon.ico" || requestPath == "/robots.txt" {
 		return true
@@ -129,7 +149,7 @@ type ControllerRegister struct {
 // Usually you should not use this method
 // please use NewControllerRegisterWithCfg
 func NewControllerRegister() *ControllerRegister {
-	return NewControllerRegisterWithCfg(BhojpurApp.Cfg)
+	return NewControllerRegisterWithCfg(WebEngine.Cfg)
 }
 
 func NewControllerRegisterWithCfg(cfg *Config) *ControllerRegister {
@@ -138,7 +158,7 @@ func NewControllerRegisterWithCfg(cfg *Config) *ControllerRegister {
 		policies: make(map[string]*Tree),
 		pool: sync.Pool{
 			New: func() interface{} {
-				return ctxutl.NewContext()
+				return ctxsvr.NewContext()
 			},
 		},
 		cfg: cfg,
@@ -271,12 +291,12 @@ func (p *ControllerRegister) Include(cList ...ControllerInterface) {
 //  ctx := p.GetContext()
 //  ctx.Reset(w, q)
 //  defer p.GiveBackContext(ctx)
-func (p *ControllerRegister) GetContext() *ctxutl.Context {
-	return p.pool.Get().(*ctxutl.Context)
+func (p *ControllerRegister) GetContext() *ctxsvr.Context {
+	return p.pool.Get().(*ctxsvr.Context)
 }
 
 // GiveBackContext put the ctx into pool so that it could be reuse
-func (p *ControllerRegister) GiveBackContext(ctx *ctxutl.Context) {
+func (p *ControllerRegister) GiveBackContext(ctx *ctxsvr.Context) {
 	p.pool.Put(ctx)
 }
 
@@ -627,7 +647,7 @@ func (p *ControllerRegister) getURL(t *Tree, url, controllerName, methodName str
 	return false, ""
 }
 
-func (p *ControllerRegister) execFilter(context *ctxutl.Context, urlPath string, pos int) (started bool) {
+func (p *ControllerRegister) execFilter(context *ctxsvr.Context, urlPath string, pos int) (started bool) {
 	var preFilterParams map[string]string
 	for _, filterR := range p.filters[pos] {
 		b, done := filterR.filter(context, urlPath, preFilterParams)
@@ -650,7 +670,7 @@ func (p *ControllerRegister) ServeHTTP(rw http.ResponseWriter, r *http.Request) 
 	p.chainRoot.filter(ctx, p.getUrlPath(ctx), preFilterParams)
 }
 
-func (p *ControllerRegister) serveHttp(ctx *ctxutl.Context) {
+func (p *ControllerRegister) serveHttp(ctx *ctxsvr.Context) {
 	var err error
 	startTime := time.Now()
 	r := ctx.Request
@@ -946,7 +966,7 @@ Admin:
 	}
 }
 
-func (p *ControllerRegister) getUrlPath(ctx *ctxutl.Context) string {
+func (p *ControllerRegister) getUrlPath(ctx *ctxsvr.Context) string {
 	urlPath := ctx.Request.URL.Path
 	if !p.cfg.RouterCaseSensitive {
 		urlPath = strings.ToLower(urlPath)
@@ -954,7 +974,7 @@ func (p *ControllerRegister) getUrlPath(ctx *ctxutl.Context) string {
 	return urlPath
 }
 
-func (p *ControllerRegister) handleParamResponse(context *ctxutl.Context, execController ControllerInterface, results []reflect.Value) {
+func (p *ControllerRegister) handleParamResponse(context *ctxsvr.Context, execController ControllerInterface, results []reflect.Value) {
 	// looping in reverse order for the case when both error and value are returned and error sets the response status code
 	for i := len(results) - 1; i >= 0; i-- {
 		result := results[i]
@@ -969,7 +989,7 @@ func (p *ControllerRegister) handleParamResponse(context *ctxutl.Context, execCo
 }
 
 // FindRouter Find Router info for URL
-func (p *ControllerRegister) FindRouter(context *ctxutl.Context) (routerInfo *ControllerInfo, isFind bool) {
+func (p *ControllerRegister) FindRouter(context *ctxsvr.Context) (routerInfo *ControllerInfo, isFind bool) {
 	var urlPath = context.Input.URL()
 	if !p.cfg.RouterCaseSensitive {
 		urlPath = strings.ToLower(urlPath)
@@ -996,6 +1016,6 @@ func toURL(params map[string]string) string {
 }
 
 // LogAccess logging info HTTP Access
-func LogAccess(ctx *ctxutl.Context, startTime *time.Time, statusCode int) {
-	BhojpurApp.LogAccess(ctx, startTime, statusCode)
+func LogAccess(ctx *ctxsvr.Context, startTime *time.Time, statusCode int) {
+	WebEngine.LogAccess(ctx, startTime, statusCode)
 }

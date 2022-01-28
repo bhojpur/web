@@ -1,5 +1,25 @@
 package engine
 
+// Copyright (c) 2018 Bhojpur Consulting Private Limited, India. All rights reserved.
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 import (
 	"bytes"
 	"encoding/json"
@@ -10,7 +30,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"github.com/bhojpur/web/pkg/core/admin"
+	webadm "github.com/bhojpur/web/pkg/core/admin"
 )
 
 type adminController struct {
@@ -37,7 +57,7 @@ func (a *adminController) ProfIndex() {
 		data   = make(map[interface{}]interface{})
 		result bytes.Buffer
 	)
-	admin.ProcessInput(command, &result)
+	webadm.ProcessInput(command, &result)
 	data["Content"] = template.HTMLEscapeString(result.String())
 
 	if format == "json" && command == "gc summary" {
@@ -74,7 +94,7 @@ func (a *adminController) TaskStatus() {
 	req.ParseForm()
 	taskname := req.Form.Get("taskname")
 	if taskname != "" {
-		cmd := admin.GetCommand("task", "run")
+		cmd := webadm.GetCommand("task", "run")
 		res := cmd.Execute(taskname)
 		if res.IsSuccess() {
 
@@ -89,7 +109,7 @@ func (a *adminController) TaskStatus() {
 
 	// List Tasks
 	content := make(M)
-	resultList := admin.GetCommand("task", "list").Execute().Content.([][]string)
+	resultList := webadm.GetCommand("task", "list").Execute().Content.([][]string)
 	var fields = []string{
 		"Task Name",
 		"Task Spec",
@@ -127,7 +147,7 @@ func heathCheck(rw http.ResponseWriter, r *http.Request) {
 		}
 	)
 
-	for name, h := range admin.AdminCheckList {
+	for name, h := range webadm.AdminCheckList {
 		if err := h.Check(); err != nil {
 			result = []string{
 				"error",
@@ -214,7 +234,7 @@ func (a *adminController) ListConf() {
 		tmpl.Execute(rw, data)
 
 	case "router":
-		content := BhojpurApp.PrintTree()
+		content := WebEngine.PrintTree()
 		content["Fields"] = []string{
 			"Router Pattern",
 			"Methods",
@@ -233,7 +253,7 @@ func (a *adminController) ListConf() {
 			}
 		)
 
-		filterTypeData := BhojpurApp.reportFilter()
+		filterTypeData := WebEngine.reportFilter()
 
 		filterTypes := make([]string, 0, len(filterTypeData))
 		for k, _ := range filterTypeData {
@@ -279,5 +299,5 @@ func buildHealthCheckResponseList(healthCheckResults *[][]string) []map[string]i
 // PrintTree print all routers
 // Deprecated using BhojpurApp directly
 func PrintTree() M {
-	return BhojpurApp.PrintTree()
+	return WebEngine.PrintTree()
 }

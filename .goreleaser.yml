@@ -1,0 +1,61 @@
+before:
+  hooks:
+    - go generate -v ./...
+builds:
+- id: websvr
+  env:
+  - CGO_ENABLED=0
+  main: server.go
+  binary: websvr
+  ldflags:
+  - -s -w -X github.com/bhojpur/web/cmd/server.version={{.Version}}-{{.ShortCommit}}
+- id: webctl
+  env:
+  - CGO_ENABLED=0
+  main: client.go
+  binary: webctl
+  flags:
+    - -tags=webctl
+  ldflags:
+  - -s -w -X github.com/bhojpur/web/cmd/client.version={{.Version}}-{{.ShortCommit}}
+archives:
+- id: websvr
+  replacements:
+    darwin: Darwin
+    linux: Linux
+    386: i386
+    amd64: x86_64
+  builds:
+  - websvr
+- id: webctl
+  files:
+  - "none*"
+  format: binary
+  builds:
+  - webctl
+  replacements:
+    darwin: Darwin
+    linux: Linux
+    386: i386
+    amd64: x86_64
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
+release:
+  prerelease: auto
+dockers:
+  - goos: linux
+    goarch: amd64
+    goarm: ''
+    dockerfile: Dockerfile
+    image_templates:
+    - "ghcr.io/bhojpur/web:{{ .Tag }}"
+    extra_files:
+    - README.md

@@ -1,5 +1,25 @@
 package engine
 
+// Copyright (c) 2018 Bhojpur Consulting Private Limited, India. All rights reserved.
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 import (
 	"crypto/tls"
 	"crypto/x509"
@@ -25,25 +45,25 @@ import (
 )
 
 var (
-	// BhojpurApp is an application instance
+	// WebEngine is a Bhojpur.NET Platform web server instance
 	// If you are using single server, you could use this
 	// But if you need multiple servers, do not use this
-	BhojpurApp *HttpServer
+	WebEngine *HttpServer
 )
 
 func init() {
-	// create Bhojpur.NET Platform application
-	BhojpurApp = NewHttpSever()
+	// create Bhojpur.NET Platform web server instance
+	WebEngine = NewHttpSever()
 }
 
-// HttpServer defines Bhojpur.NET Platform application with a new PatternServeMux.
+// HttpServer defines Bhojpur.NET Platform web server with a new PatternServeMux.
 type HttpServer struct {
 	Handlers *ControllerRegister
 	Server   *http.Server
 	Cfg      *Config
 }
 
-// NewHttpSever returns a new Bhojpur.NET Platform application.
+// NewHttpSever returns a new Bhojpur.NET Platform web server instance.
 // this method will use the BasConfig as the configure to create HttpServer
 // Be careful that when you update BasConfig, the server's Cfg will be updated too
 func NewHttpSever() *HttpServer {
@@ -65,7 +85,7 @@ func NewHttpServerWithCfg(cfg *Config) *HttpServer {
 // MiddleWare function for http.Handler
 type MiddleWare func(http.Handler) http.Handler
 
-// Run Bhojpur.NET Platform application.
+// Run Bhojpur.NET Platform web server instance.
 func (app *HttpServer) Run(addr string, mws ...MiddleWare) {
 
 	initBeforeHTTPRun()
@@ -84,7 +104,7 @@ func (app *HttpServer) Run(addr string, mws ...MiddleWare) {
 		endRunning = make(chan bool, 1)
 	)
 
-	// run cgi server
+	// run CGI server
 	if app.Cfg.Listen.EnableFcgi {
 		if app.Cfg.Listen.EnableStdIo {
 			if err = fcgi.Serve(nil, app.Handlers); err == nil { // standard I/O
@@ -253,7 +273,7 @@ func (app *HttpServer) Run(addr string, mws ...MiddleWare) {
 
 // Router see HttpServer.Router
 func Router(rootpath string, c ControllerInterface, mappingMethods ...string) *HttpServer {
-	return BhojpurApp.Router(rootpath, c, mappingMethods...)
+	return WebEngine.Router(rootpath, c, mappingMethods...)
 }
 
 // Router adds a patterned controller handler to BhojpurApp.
@@ -279,7 +299,7 @@ func (app *HttpServer) Router(rootPath string, c ControllerInterface, mappingMet
 
 // UnregisterFixedRoute see HttpServer.UnregisterFixedRoute
 func UnregisterFixedRoute(fixedRoute string, method string) *HttpServer {
-	return BhojpurApp.UnregisterFixedRoute(fixedRoute, method)
+	return WebEngine.UnregisterFixedRoute(fixedRoute, method)
 }
 
 // UnregisterFixedRoute unregisters the route with the specified fixedRoute. It is particularly useful
@@ -362,7 +382,7 @@ func findAndRemoveSingleTree(entryPointTree *Tree) {
 
 // Include see HttpServer.Include
 func Include(cList ...ControllerInterface) *HttpServer {
-	return BhojpurApp.Include(cList...)
+	return WebEngine.Include(cList...)
 }
 
 // Include will generate router file in the router/xxx.go from the controller's comments
@@ -399,7 +419,7 @@ func (app *HttpServer) Include(cList ...ControllerInterface) *HttpServer {
 
 // RESTRouter see HttpServer.RESTRouter
 func RESTRouter(rootpath string, c ControllerInterface) *HttpServer {
-	return BhojpurApp.RESTRouter(rootpath, c)
+	return WebEngine.RESTRouter(rootpath, c)
 }
 
 // RESTRouter adds a restful controller handler to BhojpurApp.
@@ -413,7 +433,7 @@ func (app *HttpServer) RESTRouter(rootpath string, c ControllerInterface) *HttpS
 
 // AutoRouter see HttpServer.AutoRouter
 func AutoRouter(c ControllerInterface) *HttpServer {
-	return BhojpurApp.AutoRouter(c)
+	return WebEngine.AutoRouter(c)
 }
 
 // AutoRouter adds defined controller handler to BhojpurApp.
@@ -427,7 +447,7 @@ func (app *HttpServer) AutoRouter(c ControllerInterface) *HttpServer {
 
 // AutoPrefix see HttpServer.AutoPrefix
 func AutoPrefix(prefix string, c ControllerInterface) *HttpServer {
-	return BhojpurApp.AutoPrefix(prefix, c)
+	return WebEngine.AutoPrefix(prefix, c)
 }
 
 // AutoPrefix adds controller handler to BhojpurApp with prefix.
@@ -441,7 +461,7 @@ func (app *HttpServer) AutoPrefix(prefix string, c ControllerInterface) *HttpSer
 
 // Get see HttpServer.Get
 func Get(rootpath string, f FilterFunc) *HttpServer {
-	return BhojpurApp.Get(rootpath, f)
+	return WebEngine.Get(rootpath, f)
 }
 
 // Get used to register router for Get method
@@ -456,7 +476,7 @@ func (app *HttpServer) Get(rootpath string, f FilterFunc) *HttpServer {
 
 // Post see HttpServer.Post
 func Post(rootpath string, f FilterFunc) *HttpServer {
-	return BhojpurApp.Post(rootpath, f)
+	return WebEngine.Post(rootpath, f)
 }
 
 // Post used to register router for Post method
@@ -471,7 +491,7 @@ func (app *HttpServer) Post(rootpath string, f FilterFunc) *HttpServer {
 
 // Delete see HttpServer.Delete
 func Delete(rootpath string, f FilterFunc) *HttpServer {
-	return BhojpurApp.Delete(rootpath, f)
+	return WebEngine.Delete(rootpath, f)
 }
 
 // Delete used to register router for Delete method
@@ -486,7 +506,7 @@ func (app *HttpServer) Delete(rootpath string, f FilterFunc) *HttpServer {
 
 // Put see HttpServer.Put
 func Put(rootpath string, f FilterFunc) *HttpServer {
-	return BhojpurApp.Put(rootpath, f)
+	return WebEngine.Put(rootpath, f)
 }
 
 // Put used to register router for Put method
@@ -501,7 +521,7 @@ func (app *HttpServer) Put(rootpath string, f FilterFunc) *HttpServer {
 
 // Head see HttpServer.Head
 func Head(rootpath string, f FilterFunc) *HttpServer {
-	return BhojpurApp.Head(rootpath, f)
+	return WebEngine.Head(rootpath, f)
 }
 
 // Head used to register router for Head method
@@ -516,8 +536,8 @@ func (app *HttpServer) Head(rootpath string, f FilterFunc) *HttpServer {
 
 // Options see HttpServer.Options
 func Options(rootpath string, f FilterFunc) *HttpServer {
-	BhojpurApp.Handlers.Options(rootpath, f)
-	return BhojpurApp
+	WebEngine.Handlers.Options(rootpath, f)
+	return WebEngine
 }
 
 // Options used to register router for Options method
@@ -532,7 +552,7 @@ func (app *HttpServer) Options(rootpath string, f FilterFunc) *HttpServer {
 
 // Patch see HttpServer.Patch
 func Patch(rootpath string, f FilterFunc) *HttpServer {
-	return BhojpurApp.Patch(rootpath, f)
+	return WebEngine.Patch(rootpath, f)
 }
 
 // Patch used to register router for Patch method
@@ -547,7 +567,7 @@ func (app *HttpServer) Patch(rootpath string, f FilterFunc) *HttpServer {
 
 // Any see HttpServer.Any
 func Any(rootpath string, f FilterFunc) *HttpServer {
-	return BhojpurApp.Any(rootpath, f)
+	return WebEngine.Any(rootpath, f)
 }
 
 // Any used to register router for all methods
@@ -562,7 +582,7 @@ func (app *HttpServer) Any(rootpath string, f FilterFunc) *HttpServer {
 
 // Handler see HttpServer.Handler
 func Handler(rootpath string, h http.Handler, options ...interface{}) *HttpServer {
-	return BhojpurApp.Handler(rootpath, h, options...)
+	return WebEngine.Handler(rootpath, h, options...)
 }
 
 // Handler used to register a Handler router
@@ -577,7 +597,7 @@ func (app *HttpServer) Handler(rootpath string, h http.Handler, options ...inter
 
 // InserFilter see HttpServer.InsertFilter
 func InsertFilter(pattern string, pos int, filter FilterFunc, opts ...FilterOpt) *HttpServer {
-	return BhojpurApp.InsertFilter(pattern, pos, filter, opts...)
+	return WebEngine.InsertFilter(pattern, pos, filter, opts...)
 }
 
 // InsertFilter adds a FilterFunc with pattern condition and action constant.
@@ -591,7 +611,7 @@ func (app *HttpServer) InsertFilter(pattern string, pos int, filter FilterFunc, 
 
 // InsertFilterChain see HttpServer.InsertFilterChain
 func InsertFilterChain(pattern string, filterChain FilterChain, opts ...FilterOpt) *HttpServer {
-	return BhojpurApp.InsertFilterChain(pattern, filterChain, opts...)
+	return WebEngine.InsertFilterChain(pattern, filterChain, opts...)
 }
 
 // InsertFilterChain adds a FilterFunc built by filterChain.

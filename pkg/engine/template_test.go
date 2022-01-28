@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	assetfs "github.com/elazarl/go-bindata-assetfs"
+	assetfs "github.com/bhojpur/web/pkg/synthesis"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/bhojpur/web/pkg/test"
@@ -66,7 +66,7 @@ func TestTemplate(t *testing.T) {
 	if err := AddViewPath(dir); err != nil {
 		t.Fatal(err)
 	}
-	beeTemplates := beeViewPathTemplates[dir]
+	beeTemplates := webViewPathTemplates[dir]
 	if len(beeTemplates) != 3 {
 		t.Fatalf("should be 3 but got %v", len(beeTemplates))
 	}
@@ -271,7 +271,7 @@ func (d TestingFileSystem) Open(name string) (http.File, error) {
 	return d.assetfs.Open(name)
 }
 
-var outputBinData = `<!DOCTYPE html>
+var outputBhojpur = `<!DOCTYPE html>
 <html>
   <head>
     <title>Bhojpur Web - Welcome Template</title>
@@ -292,7 +292,7 @@ var outputBinData = `<!DOCTYPE html>
 </html>
 `
 
-func TestFsBinData(t *testing.T) {
+func TestFsSynthesis(t *testing.T) {
 	SetTemplateFSFunc(func() http.FileSystem {
 		return TestingFileSystem{&assetfs.AssetFS{Asset: test.Asset, AssetDir: test.AssetDir, AssetInfo: test.AssetInfo}}
 	})
@@ -300,7 +300,7 @@ func TestFsBinData(t *testing.T) {
 	if err := AddViewPath("views"); err != nil {
 		t.Fatal(err)
 	}
-	beeTemplates := beeViewPathTemplates[dir]
+	beeTemplates := webViewPathTemplates[dir]
 	if len(beeTemplates) != 3 {
 		t.Fatalf("should be 3 but got %v", len(beeTemplates))
 	}
@@ -312,7 +312,7 @@ func TestFsBinData(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if out.String() != outputBinData {
+	if out.String() != outputBhojpur {
 		t.Log(out.String())
 		t.Fatal("Compare failed")
 	}

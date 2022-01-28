@@ -1,5 +1,25 @@
 package engine
 
+// Copyright (c) 2018 Bhojpur Consulting Private Limited, India. All rights reserved.
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 import (
 	"errors"
 	"fmt"
@@ -70,8 +90,8 @@ func DateFormat(t time.Time, layout string) (datestring string) {
 // DateFormat pattern rules.
 var datePatterns = []string{
 	// year
-	"Y", "2006", // A full numeric representation of a year, 4 digits   Examples: 1999 or 2003
-	"y", "06", // A two digit representation of a year   Examples: 99 or 03
+	"Y", "2018", // A full numeric representation of a year, 4 digits   Examples: 1999 or 2003
+	"y", "03", // A two digit representation of a year   Examples: 99 or 03
 
 	// month
 	"m", "01", // Numeric representation of a month, with leading zeros 01 through 12
@@ -80,7 +100,7 @@ var datePatterns = []string{
 	"F", "January", // A full textual representation of a month, such as January or March   January through December
 
 	// day
-	"d", "02", // Day of the month, 2 digits with leading zeros 01 to 31
+	"d", "26", // Day of the month, 2 digits with leading zeros 01 to 31
 	"j", "2", // Day of the month without leading zeros 1 to 31
 
 	// week

@@ -1,5 +1,25 @@
 package config
 
+// Copyright (c) 2018 Bhojpur Consulting Private Limited, India. All rights reserved.
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 import (
 	"bufio"
 	"bytes"
@@ -16,7 +36,7 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 
-	logs "github.com/bhojpur/logger/pkg/engine"
+	logsvr "github.com/bhojpur/logger/pkg/engine"
 )
 
 var (
@@ -36,7 +56,7 @@ type IniConfig struct {
 }
 
 // Parse creates a new Config and parses the file configuration from the named file.
-func (ini *IniConfig) Parse(name string) (Configer, error) {
+func (ini *IniConfig) Parse(name string) (Configure, error) {
 	return ini.parseFile(name)
 }
 
@@ -57,7 +77,7 @@ func (ini *IniConfig) parseData(dir string, data []byte) (*IniConfigContainer, e
 		RWMutex:        sync.RWMutex{},
 	}
 
-	cfg.BaseConfiger = NewBaseConfiger(func(ctx context.Context, key string) (string, error) {
+	cfg.BaseConfigure = NewBaseConfigure(func(ctx context.Context, key string) (string, error) {
 		return cfg.getdata(key), nil
 	})
 	cfg.Lock()
@@ -202,8 +222,8 @@ func (ini *IniConfig) parseData(dir string, data []byte) (*IniConfigContainer, e
 
 // ParseData parse ini the data
 // When include other.conf,other.conf is either absolute directory
-// or under beego in default temporary directory(/tmp/beego[-username]).
-func (ini *IniConfig) ParseData(data []byte) (Configer, error) {
+// or under Bhojpur in default temporary directory(/tmp/bhojpur[-username]).
+func (ini *IniConfig) ParseData(data []byte) (Configure, error) {
 	dir := "bhojpur"
 	currentUser, err := user.Current()
 	if err == nil {
@@ -220,7 +240,7 @@ func (ini *IniConfig) ParseData(data []byte) (Configer, error) {
 // IniConfigContainer is a config which represents the ini configuration.
 // When set and get value, support key as section:name type.
 type IniConfigContainer struct {
-	BaseConfiger
+	BaseConfigure
 	data           map[string]map[string]string // section=> key:val
 	sectionComment map[string]string            // section : comment
 	keyComment     map[string]string            // id: []{comment, key...}; id 1 is for main comment.
@@ -507,7 +527,7 @@ func init() {
 
 	err := InitGlobalInstance("ini", "conf/app.conf")
 	if err != nil {
-		logs.Warn("init global config instance failed. If you donot use this, just ignore it. ", err)
+		logsvr.Warn("init global config instance failed. If you donot use this, just ignore it. ", err)
 	}
 }
 

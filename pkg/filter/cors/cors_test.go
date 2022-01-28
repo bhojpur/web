@@ -1,5 +1,25 @@
 package cors
 
+// Copyright (c) 2018 Bhojpur Consulting Private Limited, India. All rights reserved.
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 import (
 	"net/http"
 	"net/http/httptest"
@@ -8,7 +28,7 @@ import (
 	"time"
 
 	"github.com/bhojpur/web/pkg/context"
-	web "github.com/bhojpur/web/pkg/engine"
+	websvr "github.com/bhojpur/web/pkg/engine"
 )
 
 // HTTPHeaderGuardRecorder is httptest.ResponseRecorder with own http.Header
@@ -41,8 +61,8 @@ func (gr *HTTPHeaderGuardRecorder) Header() http.Header {
 
 func Test_AllowAll(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	handler := web.NewControllerRegister()
-	handler.InsertFilter("*", web.BeforeRouter, Allow(&Options{
+	handler := websvr.NewControllerRegister()
+	handler.InsertFilter("*", websvr.BeforeRouter, Allow(&Options{
 		AllowAllOrigins: true,
 	}))
 	handler.Any("/foo", func(ctx *context.Context) {
@@ -58,8 +78,8 @@ func Test_AllowAll(t *testing.T) {
 
 func Test_AllowRegexMatch(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	handler := web.NewControllerRegister()
-	handler.InsertFilter("*", web.BeforeRouter, Allow(&Options{
+	handler := websvr.NewControllerRegister()
+	handler.InsertFilter("*", websvr.BeforeRouter, Allow(&Options{
 		AllowOrigins: []string{"https://aaa.com", "https://*.foo.com"},
 	}))
 	handler.Any("/foo", func(ctx *context.Context) {
@@ -78,8 +98,8 @@ func Test_AllowRegexMatch(t *testing.T) {
 
 func Test_AllowRegexNoMatch(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	handler := web.NewControllerRegister()
-	handler.InsertFilter("*", web.BeforeRouter, Allow(&Options{
+	handler := websvr.NewControllerRegister()
+	handler.InsertFilter("*", websvr.BeforeRouter, Allow(&Options{
 		AllowOrigins: []string{"https://*.foo.com"},
 	}))
 	handler.Any("/foo", func(ctx *context.Context) {
@@ -98,8 +118,8 @@ func Test_AllowRegexNoMatch(t *testing.T) {
 
 func Test_OtherHeaders(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	handler := web.NewControllerRegister()
-	handler.InsertFilter("*", web.BeforeRouter, Allow(&Options{
+	handler := websvr.NewControllerRegister()
+	handler.InsertFilter("*", websvr.BeforeRouter, Allow(&Options{
 		AllowAllOrigins:  true,
 		AllowCredentials: true,
 		AllowMethods:     []string{"PATCH", "GET"},
@@ -142,8 +162,8 @@ func Test_OtherHeaders(t *testing.T) {
 
 func Test_DefaultAllowHeaders(t *testing.T) {
 	recorder := httptest.NewRecorder()
-	handler := web.NewControllerRegister()
-	handler.InsertFilter("*", web.BeforeRouter, Allow(&Options{
+	handler := websvr.NewControllerRegister()
+	handler.InsertFilter("*", websvr.BeforeRouter, Allow(&Options{
 		AllowAllOrigins: true,
 	}))
 	handler.Any("/foo", func(ctx *context.Context) {
@@ -161,8 +181,8 @@ func Test_DefaultAllowHeaders(t *testing.T) {
 
 func Test_Preflight(t *testing.T) {
 	recorder := NewRecorder()
-	handler := web.NewControllerRegister()
-	handler.InsertFilter("*", web.BeforeRouter, Allow(&Options{
+	handler := websvr.NewControllerRegister()
+	handler.InsertFilter("*", websvr.BeforeRouter, Allow(&Options{
 		AllowAllOrigins: true,
 		AllowMethods:    []string{"PUT", "PATCH"},
 		AllowHeaders:    []string{"Origin", "X-whatever", "X-CaseSensitive"},
@@ -205,8 +225,8 @@ func Test_Preflight(t *testing.T) {
 
 func Benchmark_WithoutCORS(b *testing.B) {
 	recorder := httptest.NewRecorder()
-	handler := web.NewControllerRegister()
-	web.BasConfig.RunMode = web.PROD
+	handler := websvr.NewControllerRegister()
+	websvr.BasConfig.RunMode = websvr.PROD
 	handler.Any("/foo", func(ctx *context.Context) {
 		ctx.Output.SetStatus(500)
 	})
@@ -219,9 +239,9 @@ func Benchmark_WithoutCORS(b *testing.B) {
 
 func Benchmark_WithCORS(b *testing.B) {
 	recorder := httptest.NewRecorder()
-	handler := web.NewControllerRegister()
-	web.BasConfig.RunMode = web.PROD
-	handler.InsertFilter("*", web.BeforeRouter, Allow(&Options{
+	handler := websvr.NewControllerRegister()
+	websvr.BasConfig.RunMode = websvr.PROD
+	handler.InsertFilter("*", websvr.BeforeRouter, Allow(&Options{
 		AllowAllOrigins:  true,
 		AllowCredentials: true,
 		AllowMethods:     []string{"PATCH", "GET"},

@@ -1,8 +1,30 @@
+package auth
+
+// Copyright (c) 2018 Bhojpur Consulting Private Limited, India. All rights reserved.
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 // Package auth provides handlers to enable basic auth support.
 // Simple Usage:
 //	import(
 //		"github.com/bhojpur/web/pkg/engine"
-//		"github.com/bhojpur/web/pkg/filter/plugins/auth"
+//		"github.com/bhojpur/web/pkg/filter/auth"
 //	)
 //
 //	func main(){
@@ -19,21 +41,20 @@
 //	}
 //	authPlugin := auth.NewBasicAuthenticator(SecretAuth, "Authorization Required")
 //	bhojpur.InsertFilter("*", bhojpur.BeforeRouter,authPlugin)
-package auth
 
 import (
 	"encoding/base64"
 	"net/http"
 	"strings"
 
-	"github.com/bhojpur/web/pkg/context"
-	web "github.com/bhojpur/web/pkg/engine"
+	ctxsvr "github.com/bhojpur/web/pkg/context"
+	websvr "github.com/bhojpur/web/pkg/engine"
 )
 
 var defaultRealm = "Authorization Required"
 
 // Basic is the http basic auth
-func Basic(username string, password string) web.FilterFunc {
+func Basic(username string, password string) websvr.FilterFunc {
 	secrets := func(user, pass string) bool {
 		return user == username && pass == password
 	}
@@ -41,8 +62,8 @@ func Basic(username string, password string) web.FilterFunc {
 }
 
 // NewBasicAuthenticator return the BasicAuth
-func NewBasicAuthenticator(secrets SecretProvider, Realm string) web.FilterFunc {
-	return func(ctx *context.Context) {
+func NewBasicAuthenticator(secrets SecretProvider, Realm string) websvr.FilterFunc {
+	return func(ctx *ctxsvr.Context) {
 		a := &BasicAuth{Secrets: secrets, Realm: Realm}
 		if username := a.CheckAuth(ctx.Request); username == "" {
 			a.RequireAuth(ctx.ResponseWriter, ctx.Request)
