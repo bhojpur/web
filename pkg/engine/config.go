@@ -31,9 +31,8 @@ import (
 
 	logsvr "github.com/bhojpur/logger/pkg/engine"
 	session "github.com/bhojpur/session/pkg/engine"
-	webapp "github.com/bhojpur/web/pkg/core"
+	webapp "github.com/bhojpur/web/pkg"
 	cfgsvr "github.com/bhojpur/web/pkg/core/config"
-	websvr "github.com/bhojpur/web/pkg/engine"
 
 	ctxsvr "github.com/bhojpur/web/pkg/context"
 	"github.com/bhojpur/web/pkg/core/utils"
@@ -181,14 +180,14 @@ func init() {
 
 func defaultRecoverPanic(ctx *ctxsvr.Context, cfg *Config) {
 	if err := recover(); err != nil {
-		if err == websvr.ErrAbort {
+		if err == ErrAbort {
 			return
 		}
 		if !cfg.RecoverPanic {
 			panic(err)
 		}
 		if cfg.EnableErrorsShow {
-			if _, ok := websvr.ErrorMaps[fmt.Sprint(err)]; ok {
+			if _, ok := ErrorMaps[fmt.Sprint(err)]; ok {
 				exception(fmt.Sprint(err), ctx)
 				return
 			}
@@ -204,8 +203,8 @@ func defaultRecoverPanic(ctx *ctxsvr.Context, cfg *Config) {
 			logsvr.Critical(fmt.Sprintf("%s:%d", file, line))
 			stack = stack + fmt.Sprintln(fmt.Sprintf("%s:%d", file, line))
 		}
-		if cfg.RunMode == websvr.DEV && cfg.EnableErrorsRender {
-			logsvr.showErr(err, ctx, stack)
+		if cfg.RunMode == DEV && cfg.EnableErrorsRender {
+			showErr(err, ctx, stack)
 		}
 		if ctx.Output.Status != 0 {
 			ctx.ResponseWriter.WriteHeader(ctx.Output.Status)
@@ -218,7 +217,7 @@ func defaultRecoverPanic(ctx *ctxsvr.Context, cfg *Config) {
 func newBasConfig() *Config {
 	res := &Config{
 		AppName:             "bhojpur",
-		RunMode:             websvr.PROD,
+		RunMode:             PROD,
 		RouterCaseSensitive: true,
 		ServerName:          "Bhojpur WebEngine:" + webapp.VERSION,
 		RecoverPanic:        true,

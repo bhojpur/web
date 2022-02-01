@@ -1,6 +1,30 @@
+package logs
+
+// Copyright (c) 2018 Bhojpur Consulting Private Limited, India. All rights reserved.
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 // Usage:
 //
-// import "github.com/bhojpur/web/pkg/logs"
+// import (
+//	logs "github.com/bhojpur/logger/pkg/engine"
+// )
 //
 //	log := NewLogger(10000)
 //	log.SetLogger("console", "")
@@ -14,7 +38,6 @@
 //	log.Warn("warning")
 //	log.Debug("debug")
 //	log.Critical("critical")
-package logs
 
 import (
 	"log"
@@ -80,151 +103,151 @@ func Register(name string, log newLoggerFunc) {
 	})
 }
 
-// BeeLogger is default logger in Bhojpur application.
+// BhojpurLogger is default logger in Bhojpur application.
 // it can contain several providers and log message into all providers.
-type BeeLogger logs.BeeLogger
+type BhojpurLogger logs.BhojpurLogger
 
 const defaultAsyncMsgLen = 1e3
 
-// NewLogger returns a new BeeLogger.
+// NewLogger returns a new BhojpurLogger.
 // channelLen means the number of messages in chan(used where asynchronous is true).
 // if the buffering chan is full, logger adapters write to file or other way.
-func NewLogger(channelLens ...int64) *BeeLogger {
-	return (*BeeLogger)(logs.NewLogger(channelLens...))
+func NewLogger(channelLens ...int64) *BhojpurLogger {
+	return (*BhojpurLogger)(logs.NewLogger(channelLens...))
 }
 
 // Async set the log to asynchronous and start the goroutine
-func (bl *BeeLogger) Async(msgLen ...int64) *BeeLogger {
-	(*logs.BeeLogger)(bl).Async(msgLen...)
+func (bl *BhojpurLogger) Async(msgLen ...int64) *BhojpurLogger {
+	(*logs.BhojpurLogger)(bl).Async(msgLen...)
 	return bl
 }
 
-// SetLogger provides a given logger adapter into BeeLogger with config string.
+// SetLogger provides a given logger adapter into BhojpurLogger with config string.
 // config need to be correct JSON as string: {"interval":360}.
-func (bl *BeeLogger) SetLogger(adapterName string, configs ...string) error {
-	return (*logs.BeeLogger)(bl).SetLogger(adapterName, configs...)
+func (bl *BhojpurLogger) SetLogger(adapterName string, configs ...string) error {
+	return (*logs.BhojpurLogger)(bl).SetLogger(adapterName, configs...)
 }
 
-// DelLogger remove a logger adapter in BeeLogger.
-func (bl *BeeLogger) DelLogger(adapterName string) error {
-	return (*logs.BeeLogger)(bl).DelLogger(adapterName)
+// DelLogger remove a logger adapter in BhojpurLogger.
+func (bl *BhojpurLogger) DelLogger(adapterName string) error {
+	return (*logs.BhojpurLogger)(bl).DelLogger(adapterName)
 }
 
-func (bl *BeeLogger) Write(p []byte) (n int, err error) {
-	return (*logs.BeeLogger)(bl).Write(p)
+func (bl *BhojpurLogger) Write(p []byte) (n int, err error) {
+	return (*logs.BhojpurLogger)(bl).Write(p)
 }
 
 // SetLevel Set log message level.
 // If message level (such as LevelDebug) is higher than logger level (such as LevelWarning),
 // log providers will not even be sent the message.
-func (bl *BeeLogger) SetLevel(l int) {
-	(*logs.BeeLogger)(bl).SetLevel(l)
+func (bl *BhojpurLogger) SetLevel(l int) {
+	(*logs.BhojpurLogger)(bl).SetLevel(l)
 }
 
 // GetLevel Get Current log message level.
-func (bl *BeeLogger) GetLevel() int {
-	return (*logs.BeeLogger)(bl).GetLevel()
+func (bl *BhojpurLogger) GetLevel() int {
+	return (*logs.BhojpurLogger)(bl).GetLevel()
 }
 
 // SetLogFuncCallDepth set log funcCallDepth
-func (bl *BeeLogger) SetLogFuncCallDepth(d int) {
-	(*logs.BeeLogger)(bl).SetLogFuncCallDepth(d)
+func (bl *BhojpurLogger) SetLogFuncCallDepth(d int) {
+	(*logs.BhojpurLogger)(bl).SetLogFuncCallDepth(d)
 }
 
 // GetLogFuncCallDepth return log funcCallDepth for wrapper
-func (bl *BeeLogger) GetLogFuncCallDepth() int {
-	return (*logs.BeeLogger)(bl).GetLogFuncCallDepth()
+func (bl *BhojpurLogger) GetLogFuncCallDepth() int {
+	return (*logs.BhojpurLogger)(bl).GetLogFuncCallDepth()
 }
 
 // EnableFuncCallDepth enable log funcCallDepth
-func (bl *BeeLogger) EnableFuncCallDepth(b bool) {
-	(*logs.BeeLogger)(bl).EnableFuncCallDepth(b)
+func (bl *BhojpurLogger) EnableFuncCallDepth(b bool) {
+	(*logs.BhojpurLogger)(bl).EnableFuncCallDepth(b)
 }
 
 // set prefix
-func (bl *BeeLogger) SetPrefix(s string) {
-	(*logs.BeeLogger)(bl).SetPrefix(s)
+func (bl *BhojpurLogger) SetPrefix(s string) {
+	(*logs.BhojpurLogger)(bl).SetPrefix(s)
 }
 
 // Emergency Log EMERGENCY level message.
-func (bl *BeeLogger) Emergency(format string, v ...interface{}) {
-	(*logs.BeeLogger)(bl).Emergency(format, v...)
+func (bl *BhojpurLogger) Emergency(format string, v ...interface{}) {
+	(*logs.BhojpurLogger)(bl).Emergency(format, v...)
 }
 
 // Alert Log ALERT level message.
-func (bl *BeeLogger) Alert(format string, v ...interface{}) {
-	(*logs.BeeLogger)(bl).Alert(format, v...)
+func (bl *BhojpurLogger) Alert(format string, v ...interface{}) {
+	(*logs.BhojpurLogger)(bl).Alert(format, v...)
 }
 
 // Critical Log CRITICAL level message.
-func (bl *BeeLogger) Critical(format string, v ...interface{}) {
-	(*logs.BeeLogger)(bl).Critical(format, v...)
+func (bl *BhojpurLogger) Critical(format string, v ...interface{}) {
+	(*logs.BhojpurLogger)(bl).Critical(format, v...)
 }
 
 // Error Log ERROR level message.
-func (bl *BeeLogger) Error(format string, v ...interface{}) {
-	(*logs.BeeLogger)(bl).Error(format, v...)
+func (bl *BhojpurLogger) Error(format string, v ...interface{}) {
+	(*logs.BhojpurLogger)(bl).Error(format, v...)
 }
 
 // Warning Log WARNING level message.
-func (bl *BeeLogger) Warning(format string, v ...interface{}) {
-	(*logs.BeeLogger)(bl).Warning(format, v...)
+func (bl *BhojpurLogger) Warning(format string, v ...interface{}) {
+	(*logs.BhojpurLogger)(bl).Warning(format, v...)
 }
 
 // Notice Log NOTICE level message.
-func (bl *BeeLogger) Notice(format string, v ...interface{}) {
-	(*logs.BeeLogger)(bl).Notice(format, v...)
+func (bl *BhojpurLogger) Notice(format string, v ...interface{}) {
+	(*logs.BhojpurLogger)(bl).Notice(format, v...)
 }
 
 // Informational Log INFORMATIONAL level message.
-func (bl *BeeLogger) Informational(format string, v ...interface{}) {
-	(*logs.BeeLogger)(bl).Informational(format, v...)
+func (bl *BhojpurLogger) Informational(format string, v ...interface{}) {
+	(*logs.BhojpurLogger)(bl).Informational(format, v...)
 }
 
 // Debug Log DEBUG level message.
-func (bl *BeeLogger) Debug(format string, v ...interface{}) {
-	(*logs.BeeLogger)(bl).Debug(format, v...)
+func (bl *BhojpurLogger) Debug(format string, v ...interface{}) {
+	(*logs.BhojpurLogger)(bl).Debug(format, v...)
 }
 
 // Warn Log WARN level message.
 // compatibility alias for Warning()
-func (bl *BeeLogger) Warn(format string, v ...interface{}) {
-	(*logs.BeeLogger)(bl).Warn(format, v...)
+func (bl *BhojpurLogger) Warn(format string, v ...interface{}) {
+	(*logs.BhojpurLogger)(bl).Warn(format, v...)
 }
 
 // Info Log INFO level message.
 // compatibility alias for Informational()
-func (bl *BeeLogger) Info(format string, v ...interface{}) {
-	(*logs.BeeLogger)(bl).Info(format, v...)
+func (bl *BhojpurLogger) Info(format string, v ...interface{}) {
+	(*logs.BhojpurLogger)(bl).Info(format, v...)
 }
 
 // Trace Log TRACE level message.
 // compatibility alias for Debug()
-func (bl *BeeLogger) Trace(format string, v ...interface{}) {
-	(*logs.BeeLogger)(bl).Trace(format, v...)
+func (bl *BhojpurLogger) Trace(format string, v ...interface{}) {
+	(*logs.BhojpurLogger)(bl).Trace(format, v...)
 }
 
 // Flush flush all chan data.
-func (bl *BeeLogger) Flush() {
-	(*logs.BeeLogger)(bl).Flush()
+func (bl *BhojpurLogger) Flush() {
+	(*logs.BhojpurLogger)(bl).Flush()
 }
 
-// Close close logger, flush all chan data and destroy all adapters in BeeLogger.
-func (bl *BeeLogger) Close() {
-	(*logs.BeeLogger)(bl).Close()
+// Close close logger, flush all chan data and destroy all adapters in BhojpurLogger.
+func (bl *BhojpurLogger) Close() {
+	(*logs.BhojpurLogger)(bl).Close()
 }
 
 // Reset close all outputs, and set bl.outputs to nil
-func (bl *BeeLogger) Reset() {
-	(*logs.BeeLogger)(bl).Reset()
+func (bl *BhojpurLogger) Reset() {
+	(*logs.BhojpurLogger)(bl).Reset()
 }
 
-// GetBeeLogger returns the default BeeLogger
-func GetBeeLogger() *BeeLogger {
-	return (*BeeLogger)(logs.GetBeeLogger())
+// GetBhojpurLogger returns the default BhojpurLogger
+func GetBhojpurLogger() *BhojpurLogger {
+	return (*BhojpurLogger)(logs.GetBhojpurLogger())
 }
 
-// GetLogger returns the default BeeLogger
+// GetLogger returns the default BhojpurLogger
 func GetLogger(prefixes ...string) *log.Logger {
 	return logs.GetLogger(prefixes...)
 }
@@ -234,9 +257,9 @@ func Reset() {
 	logs.Reset()
 }
 
-// Async set the beelogger with Async mode and hold msglen messages
-func Async(msgLen ...int64) *BeeLogger {
-	return (*BeeLogger)(logs.Async(msgLen...))
+// Async set the BhojpurLogger with Async mode and hold msglen messages
+func Async(msgLen ...int64) *BhojpurLogger {
+	return (*BhojpurLogger)(logs.Async(msgLen...))
 }
 
 // SetLevel sets the global log level used by the simple logger.

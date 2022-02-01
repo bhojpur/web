@@ -25,8 +25,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/casbin/casbin"
-
+	plcsvr "github.com/bhojpur/policy/pkg/engine"
 	ctxsvr "github.com/bhojpur/web/pkg/context"
 	websvr "github.com/bhojpur/web/pkg/engine"
 	webauth "github.com/bhojpur/web/pkg/filter/auth"
@@ -47,7 +46,7 @@ func TestBasic(t *testing.T) {
 	handler := websvr.NewControllerRegister()
 
 	handler.InsertFilter("*", websvr.BeforeRouter, webauth.Basic("alice", "123"))
-	handler.InsertFilter("*", websvr.BeforeRouter, NewAuthorizer(casbin.NewEnforcer("authz_model.conf", "authz_policy.csv")))
+	handler.InsertFilter("*", websvr.BeforeRouter, NewAuthorizer(plcsvr.NewEnforcer("authz_model.conf", "authz_policy.csv")))
 
 	handler.Any("*", func(ctx *ctxsvr.Context) {
 		ctx.Output.SetStatus(200)
@@ -63,7 +62,7 @@ func TestPathWildcard(t *testing.T) {
 	handler := websvr.NewControllerRegister()
 
 	handler.InsertFilter("*", websvr.BeforeRouter, webauth.Basic("bob", "123"))
-	handler.InsertFilter("*", websvr.BeforeRouter, NewAuthorizer(casbin.NewEnforcer("authz_model.conf", "authz_policy.csv")))
+	handler.InsertFilter("*", websvr.BeforeRouter, NewAuthorizer(plcsvr.NewEnforcer("authz_model.conf", "authz_policy.csv")))
 
 	handler.Any("*", func(ctx *ctxsvr.Context) {
 		ctx.Output.SetStatus(200)
@@ -88,7 +87,7 @@ func TestRBAC(t *testing.T) {
 	handler := websvr.NewControllerRegister()
 
 	handler.InsertFilter("*", websvr.BeforeRouter, webauth.Basic("cathy", "123"))
-	e := casbin.NewEnforcer("authz_model.conf", "authz_policy.csv")
+	e := plcsvr.NewEnforcer("authz_model.conf", "authz_policy.csv")
 	handler.InsertFilter("*", websvr.BeforeRouter, NewAuthorizer(e))
 
 	handler.Any("*", func(ctx *ctxsvr.Context) {

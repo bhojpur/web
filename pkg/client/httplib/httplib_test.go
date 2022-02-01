@@ -1,8 +1,30 @@
 package httplib
 
+// Copyright (c) 2018 Bhojpur Consulting Private Limited, India. All rights reserved.
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 import (
+	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -48,7 +70,6 @@ func TestDoRequest(t *testing.T) {
 	if elapsedTime < delayedTime {
 		t.Errorf("Not enough retries. Took %dms. Delay was meant to take %dms", elapsedTime, delayedTime)
 	}
-
 }
 
 func TestGet(t *testing.T) {
@@ -87,7 +108,7 @@ func TestSimplePost(t *testing.T) {
 	}
 }
 
-//func TestPostFile(t *testing.T) {
+// func TestPostFile(t *testing.T) {
 //	v := "smallfish"
 //	req := Post("http://httpbin.org/post")
 //	req.Debug(true)
@@ -104,7 +125,7 @@ func TestSimplePost(t *testing.T) {
 //	if n == -1 {
 //		t.Fatal(v + " not found in post")
 //	}
-//}
+// }
 
 func TestSimplePut(t *testing.T) {
 	str, err := Put("http://httpbin.org/put").String()
@@ -233,7 +254,6 @@ func TestToJson(t *testing.T) {
 			t.Fatal("response is not valid ip")
 		}
 	}
-
 }
 
 func TestToFile(t *testing.T) {
@@ -245,7 +265,7 @@ func TestToFile(t *testing.T) {
 	}
 	defer os.Remove(f)
 	b, err := ioutil.ReadFile(f)
-	if n := strings.Index(string(b), "origin"); n == -1 {
+	if n := bytes.Index(b, []byte("origin")); n == -1 {
 		t.Fatal(err)
 	}
 }
@@ -259,7 +279,7 @@ func TestToFileDir(t *testing.T) {
 	}
 	defer os.RemoveAll("./files")
 	b, err := ioutil.ReadFile(f)
-	if n := strings.Index(string(b), "origin"); n == -1 {
+	if n := bytes.Index(b, []byte("origin")); n == -1 {
 		t.Fatal(err)
 	}
 }
@@ -276,13 +296,159 @@ func TestHeader(t *testing.T) {
 
 // TestAddFilter make sure that AddFilters only work for the specific request
 func TestAddFilter(t *testing.T) {
-	req := Get("http://app.bhojpur.net")
+	req := Get("http://bhojpur.net")
 	req.AddFilters(func(next Filter) Filter {
 		return func(ctx context.Context, req *BhojpurHTTPRequest) (*http.Response, error) {
 			return next(ctx, req)
 		}
 	})
 
-	r := Get("http://app.bhojpur.net")
+	r := Get("http://bhojpur.net")
 	assert.Equal(t, 1, len(req.setting.FilterChains)-len(r.setting.FilterChains))
+}
+
+func TestFilterChainOrder(t *testing.T) {
+	req := Get("http://bhojpur.net")
+	req.AddFilters(func(next Filter) Filter {
+		return func(ctx context.Context, req *BhojpurHTTPRequest) (*http.Response, error) {
+			return NewHttpResponseWithJsonBody("first"), nil
+		}
+	})
+
+	req.AddFilters(func(next Filter) Filter {
+		return func(ctx context.Context, req *BhojpurHTTPRequest) (*http.Response, error) {
+			return NewHttpResponseWithJsonBody("second"), nil
+		}
+	})
+
+	resp, err := req.DoRequestWithCtx(context.Background())
+	assert.Nil(t, err)
+	data := make([]byte, 5)
+	_, _ = resp.Body.Read(data)
+	assert.Equal(t, "first", string(data))
+}
+
+func TestHead(t *testing.T) {
+	req := Head("http://bhojpur.net")
+	assert.NotNil(t, req)
+	assert.Equal(t, "HEAD", req.req.Method)
+}
+
+func TestDelete(t *testing.T) {
+	req := Delete("http://bhojpur.net")
+	assert.NotNil(t, req)
+	assert.Equal(t, "DELETE", req.req.Method)
+}
+
+func TestPost(t *testing.T) {
+	req := Post("http://bhojpur.net")
+	assert.NotNil(t, req)
+	assert.Equal(t, "POST", req.req.Method)
+}
+
+func TestNewBhojpurRequest(t *testing.T) {
+	req := NewBhojpurRequest("http://bhojpur.net", "GET")
+	assert.NotNil(t, req)
+	assert.Equal(t, "GET", req.req.Method)
+
+	// invalid case but still go request
+	req = NewBhojpurRequest("httpa\ta://bhojpur.net", "GET")
+	assert.NotNil(t, req)
+}
+
+func TestBhojpurHTTPRequestSetProtocolVersion(t *testing.T) {
+	req := NewBhojpurRequest("http://bhojpur.net", "GET")
+	req.SetProtocolVersion("HTTP/3.10")
+	assert.Equal(t, "HTTP/3.10", req.req.Proto)
+	assert.Equal(t, 3, req.req.ProtoMajor)
+	assert.Equal(t, 10, req.req.ProtoMinor)
+
+	req.SetProtocolVersion("")
+	assert.Equal(t, "HTTP/1.1", req.req.Proto)
+	assert.Equal(t, 1, req.req.ProtoMajor)
+	assert.Equal(t, 1, req.req.ProtoMinor)
+
+	// invalid case
+	req.SetProtocolVersion("HTTP/aaa1.1")
+	assert.Equal(t, "HTTP/1.1", req.req.Proto)
+	assert.Equal(t, 1, req.req.ProtoMajor)
+	assert.Equal(t, 1, req.req.ProtoMinor)
+}
+
+func TestPut(t *testing.T) {
+	req := Put("http://bhojpur.net")
+	assert.NotNil(t, req)
+	assert.Equal(t, "PUT", req.req.Method)
+}
+
+func TestBhojpurHTTPRequestHeader(t *testing.T) {
+	req := Post("http://bhojpur.net")
+	key, value := "test-header", "test-header-value"
+	req.Header(key, value)
+	assert.Equal(t, value, req.req.Header.Get(key))
+}
+
+func TestBhojpurHTTPRequestSetHost(t *testing.T) {
+	req := Post("http://bhojpur.net")
+	host := "test-hose"
+	req.SetHost(host)
+	assert.Equal(t, host, req.req.Host)
+}
+
+func TestBhojpurHTTPRequestParam(t *testing.T) {
+	req := Post("http://bhojpur.net")
+	key, value := "test-param", "test-param-value"
+	req.Param(key, value)
+	assert.Equal(t, value, req.params[key][0])
+
+	value1 := "test-param-value-1"
+	req.Param(key, value1)
+	assert.Equal(t, value1, req.params[key][1])
+}
+
+func TestBhojpurHTTPRequestBody(t *testing.T) {
+	req := Post("http://bhojpur.net")
+	body := `hello, world`
+	req.Body([]byte(body))
+	assert.Equal(t, int64(len(body)), req.req.ContentLength)
+	assert.NotNil(t, req.req.GetBody)
+	assert.NotNil(t, req.req.Body)
+
+	body = "hhhh, I am test"
+	req.Body(body)
+	assert.Equal(t, int64(len(body)), req.req.ContentLength)
+	assert.NotNil(t, req.req.GetBody)
+	assert.NotNil(t, req.req.Body)
+
+	// invalid case
+	req.Body(13)
+}
+
+type user struct {
+	Name string `xml:"name"`
+}
+
+func TestBhojpurHTTPRequestXMLBody(t *testing.T) {
+	req := Post("http://bhojpur.net")
+	body := &user{
+		Name: "Tom",
+	}
+	_, err := req.XMLBody(body)
+	assert.True(t, req.req.ContentLength > 0)
+	assert.Nil(t, err)
+	assert.NotNil(t, req.req.GetBody)
+}
+
+// TODO
+func TestBhojpurHTTPRequestResponseForValue(t *testing.T) {
+}
+
+func TestBhojpurHTTPRequestJSONMarshal(t *testing.T) {
+	req := Post("http://bhojpur.net")
+	req.SetEscapeHTML(false)
+	body := map[string]interface{}{
+		"escape": "left&right",
+	}
+	b, _ := req.JSONMarshal(body)
+	assert.Equal(t, fmt.Sprintf(`{"escape":"left&right"}%s`, "\n"), string(b))
 }

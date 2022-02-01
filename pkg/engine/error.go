@@ -29,10 +29,9 @@ import (
 	"strconv"
 	"strings"
 
+	webapp "github.com/bhojpur/web/pkg"
 	ctxsvr "github.com/bhojpur/web/pkg/context"
-	webapp "github.com/bhojpur/web/pkg/core"
 	"github.com/bhojpur/web/pkg/core/utils"
-	websvr "github.com/bhojpur/web/pkg/engine"
 )
 
 const (
@@ -93,7 +92,7 @@ var tpl = `
 func showErr(err interface{}, ctx *ctxsvr.Context, stack string) {
 	t, _ := template.New("bhojpurerrortemp").Parse(tpl)
 	data := map[string]string{
-		"AppError":       fmt.Sprintf("%s:%v", websvr.BasConfig.AppName, err),
+		"AppError":       fmt.Sprintf("%s:%v", BasConfig.AppName, err),
 		"RequestMethod":  ctx.Input.Method(),
 		"RequestURL":     ctx.Input.URI(),
 		"RemoteAddr":     ctx.Input.IP(),
@@ -395,19 +394,19 @@ func responseError(rw http.ResponseWriter, r *http.Request, errCode int, errCont
 // usage:
 // 	bhojpur.ErrorHandler("404",NotFound)
 //	bhojpur.ErrorHandler("500",InternalServerError)
-func ErrorHandler(code string, h http.HandlerFunc) *websvr.HttpServer {
+func ErrorHandler(code string, h http.HandlerFunc) *HttpServer {
 	ErrorMaps[code] = &errorInfo{
 		errorType: errorTypeHandler,
 		handler:   h,
 		method:    code,
 	}
-	return websvr.WebEngine
+	return WebEngine
 }
 
 // ErrorController registers ControllerInterface to each http err code string.
 // usage:
 // 	bhojpur.ErrorController(&controllers.ErrorController{})
-func ErrorController(c websvr.ControllerInterface) *websvr.HttpServer {
+func ErrorController(c ControllerInterface) *HttpServer {
 	reflectVal := reflect.ValueOf(c)
 	rt := reflectVal.Type()
 	ct := reflect.Indirect(reflectVal).Type()
@@ -422,7 +421,7 @@ func ErrorController(c websvr.ControllerInterface) *websvr.HttpServer {
 			}
 		}
 	}
-	return websvr.WebEngine
+	return WebEngine
 }
 
 // Exception Write HttpStatus with errCode and Exec error handler if exist.
@@ -457,7 +456,7 @@ func exception(errCode string, ctx *ctxsvr.Context) {
 
 func executeError(err *errorInfo, ctx *ctxsvr.Context, code int) {
 	//make sure to log the error in the access log
-	websvr.LogAccess(ctx, nil, code)
+	LogAccess(ctx, nil, code)
 
 	if err.errorType == errorTypeHandler {
 		ctx.ResponseWriter.WriteHeader(code)
@@ -468,7 +467,7 @@ func executeError(err *errorInfo, ctx *ctxsvr.Context, code int) {
 		ctx.Output.SetStatus(code)
 		//Invoke the request handler
 		vc := reflect.New(err.controllerType)
-		execController, ok := vc.Interface().(websvr.ControllerInterface)
+		execController, ok := vc.Interface().(ControllerInterface)
 		if !ok {
 			panic("controller is not ControllerInterface")
 		}
@@ -484,7 +483,7 @@ func executeError(err *errorInfo, ctx *ctxsvr.Context, code int) {
 		method.Call([]reflect.Value{})
 
 		//render template
-		if websvr.BasConfig.WebConfig.AutoRender {
+		if BasConfig.WebConfig.AutoRender {
 			if err := execController.Render(); err != nil {
 				panic(err)
 			}

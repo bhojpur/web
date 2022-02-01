@@ -38,6 +38,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	tknsvr "github.com/bhojpur/token/pkg/utils"
 )
 
 // Commonly used mime-types
@@ -150,7 +152,7 @@ func (ctx *Context) XSRFToken(key string, expire int64) string {
 	if ctx._xsrfToken == "" {
 		token, ok := ctx.GetSecureCookie(key, "_xsrf")
 		if !ok {
-			token = string(token.RandomCreateBytes(32))
+			token = string(tknsvr.RandomCreateBytes(32))
 			// TODO make it configurable
 			ctx.SetSecureCookie(key, "_xsrf", token, expire, "", "")
 		}

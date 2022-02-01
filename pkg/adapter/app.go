@@ -63,7 +63,7 @@ func oldMiddlewareToNew(mws []MiddleWare) []web.MiddleWare {
 	return newMws
 }
 
-// Router adds a patterned controller handler to BeeApp.
+// Router adds a patterned controller handler to BhojpurApp.
 // it's an alias method of HttpServer.Router.
 // usage:
 //  simple router
@@ -136,14 +136,14 @@ func oldToNewCtrlIntfs(cList []ControllerInterface) []web.ControllerInterface {
 	return newList
 }
 
-// RESTRouter adds a restful controller handler to BeeApp.
+// RESTRouter adds a restful controller handler to BhojpurApp.
 // its' controller implements bhojpur.ControllerInterface and
 // defines a param "pattern/:objectId" to visit each resource.
 func RESTRouter(rootpath string, c ControllerInterface) *App {
 	return (*App)(web.RESTRouter(rootpath, c))
 }
 
-// AutoRouter adds defined controller handler to BeeApp.
+// AutoRouter adds defined controller handler to BhojpurApp.
 // it's same to HttpServer.AutoRouter.
 // if bhojpur.AddAuto(&MainContorlller{}) and MainController has methods List and Page,
 // visit the url /main/list to exec List function or /main/page to exec Page function.
@@ -151,7 +151,7 @@ func AutoRouter(c ControllerInterface) *App {
 	return (*App)(web.AutoRouter(c))
 }
 
-// AutoPrefix adds controller handler to BeeApp with prefix.
+// AutoPrefix adds controller handler to BhojpurApp with prefix.
 // it's same to HttpServer.AutoRouterWithPrefix.
 // if bhojpur.AutoPrefix("/admin",&MainContorlller{}) and MainController has methods List and Page,
 // visit the url /admin/main/list to exec List function or /admin/main/page to exec Page function.

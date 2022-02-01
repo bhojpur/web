@@ -1,0 +1,246 @@
+package orm
+
+// Copyright (c) 2018 Bhojpur Consulting Private Limited, India. All rights reserved.
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
+import (
+	"database/sql"
+	"fmt"
+	"reflect"
+	"strings"
+	"time"
+)
+
+// 1 is attr
+// 2 is tag
+var supportTag = map[string]int{
+	"-":            1,
+	"null":         1,
+	"index":        1,
+	"unique":       1,
+	"pk":           1,
+	"auto":         1,
+	"auto_now":     1,
+	"auto_now_add": 1,
+	"size":         2,
+	"column":       2,
+	"default":      2,
+	"rel":          2,
+	"reverse":      2,
+	"rel_table":    2,
+	"rel_through":  2,
+	"digits":       2,
+	"decimals":     2,
+	"on_delete":    2,
+	"type":         2,
+	"description":  2,
+	"precision":    2,
+}
+
+// get reflect.Type name with package path.
+func getFullName(typ reflect.Type) string {
+	return typ.PkgPath() + "." + typ.Name()
+}
+
+// getTableName get struct table name.
+// If the struct implement the TableName, then get the result as tablename
+// else use the struct name which will apply snakeString.
+func getTableName(val reflect.Value) string {
+	if fun := val.MethodByName("TableName"); fun.IsValid() {
+		vals := fun.Call([]reflect.Value{})
+		// has return and the first val is string
+		if len(vals) > 0 && vals[0].Kind() == reflect.String {
+			return vals[0].String()
+		}
+	}
+	return snakeString(reflect.Indirect(val).Type().Name())
+}
+
+// get table engine, myisam or innodb.
+func getTableEngine(val reflect.Value) string {
+	fun := val.MethodByName("TableEngine")
+	if fun.IsValid() {
+		vals := fun.Call([]reflect.Value{})
+		if len(vals) > 0 && vals[0].Kind() == reflect.String {
+			return vals[0].String()
+		}
+	}
+	return ""
+}
+
+// get table index from method.
+func getTableIndex(val reflect.Value) [][]string {
+	fun := val.MethodByName("TableIndex")
+	if fun.IsValid() {
+		vals := fun.Call([]reflect.Value{})
+		if len(vals) > 0 && vals[0].CanInterface() {
+			if d, ok := vals[0].Interface().([][]string); ok {
+				return d
+			}
+		}
+	}
+	return nil
+}
+
+// get table unique from method
+func getTableUnique(val reflect.Value) [][]string {
+	fun := val.MethodByName("TableUnique")
+	if fun.IsValid() {
+		vals := fun.Call([]reflect.Value{})
+		if len(vals) > 0 && vals[0].CanInterface() {
+			if d, ok := vals[0].Interface().([][]string); ok {
+				return d
+			}
+		}
+	}
+	return nil
+}
+
+// get whether the table needs to be created for the database alias
+func isApplicableTableForDB(val reflect.Value, db string) bool {
+	fun := val.MethodByName("IsApplicableTableForDB")
+	if fun.IsValid() {
+		vals := fun.Call([]reflect.Value{reflect.ValueOf(db)})
+		if len(vals) > 0 && vals[0].Kind() == reflect.Bool {
+			return vals[0].Bool()
+		}
+	}
+	return true
+}
+
+// get snaked column name
+func getColumnName(ft int, addrField reflect.Value, sf reflect.StructField, col string) string {
+	column := col
+	if col == "" {
+		column = nameStrategyMap[nameStrategy](sf.Name)
+	}
+	switch ft {
+	case RelForeignKey, RelOneToOne:
+		if len(col) == 0 {
+			column = column + "_id"
+		}
+	case RelManyToMany, RelReverseMany, RelReverseOne:
+		column = sf.Name
+	}
+	return column
+}
+
+// return field type as type constant from reflect.Value
+func getFieldType(val reflect.Value) (ft int, err error) {
+	switch val.Type() {
+	case reflect.TypeOf(new(int8)):
+		ft = TypeBitField
+	case reflect.TypeOf(new(int16)):
+		ft = TypeSmallIntegerField
+	case reflect.TypeOf(new(int32)),
+		reflect.TypeOf(new(int)):
+		ft = TypeIntegerField
+	case reflect.TypeOf(new(int64)):
+		ft = TypeBigIntegerField
+	case reflect.TypeOf(new(uint8)):
+		ft = TypePositiveBitField
+	case reflect.TypeOf(new(uint16)):
+		ft = TypePositiveSmallIntegerField
+	case reflect.TypeOf(new(uint32)),
+		reflect.TypeOf(new(uint)):
+		ft = TypePositiveIntegerField
+	case reflect.TypeOf(new(uint64)):
+		ft = TypePositiveBigIntegerField
+	case reflect.TypeOf(new(float32)),
+		reflect.TypeOf(new(float64)):
+		ft = TypeFloatField
+	case reflect.TypeOf(new(bool)):
+		ft = TypeBooleanField
+	case reflect.TypeOf(new(string)):
+		ft = TypeVarCharField
+	case reflect.TypeOf(new(time.Time)):
+		ft = TypeDateTimeField
+	default:
+		elm := reflect.Indirect(val)
+		switch elm.Kind() {
+		case reflect.Int8:
+			ft = TypeBitField
+		case reflect.Int16:
+			ft = TypeSmallIntegerField
+		case reflect.Int32, reflect.Int:
+			ft = TypeIntegerField
+		case reflect.Int64:
+			ft = TypeBigIntegerField
+		case reflect.Uint8:
+			ft = TypePositiveBitField
+		case reflect.Uint16:
+			ft = TypePositiveSmallIntegerField
+		case reflect.Uint32, reflect.Uint:
+			ft = TypePositiveIntegerField
+		case reflect.Uint64:
+			ft = TypePositiveBigIntegerField
+		case reflect.Float32, reflect.Float64:
+			ft = TypeFloatField
+		case reflect.Bool:
+			ft = TypeBooleanField
+		case reflect.String:
+			ft = TypeVarCharField
+		default:
+			if elm.Interface() == nil {
+				panic(fmt.Errorf("%s is nil pointer, may be miss setting tag", val))
+			}
+			switch elm.Interface().(type) {
+			case sql.NullInt64:
+				ft = TypeBigIntegerField
+			case sql.NullFloat64:
+				ft = TypeFloatField
+			case sql.NullBool:
+				ft = TypeBooleanField
+			case sql.NullString:
+				ft = TypeVarCharField
+			case time.Time:
+				ft = TypeDateTimeField
+			}
+		}
+	}
+	if ft&IsFieldType == 0 {
+		err = fmt.Errorf("unsupport field type %s, may be miss setting tag", val)
+	}
+	return
+}
+
+// parse struct tag string
+func parseStructTag(data string) (attrs map[string]bool, tags map[string]string) {
+	attrs = make(map[string]bool)
+	tags = make(map[string]string)
+	for _, v := range strings.Split(data, defaultStructTagDelim) {
+		if v == "" {
+			continue
+		}
+		v = strings.TrimSpace(v)
+		if t := strings.ToLower(v); supportTag[t] == 1 {
+			attrs[t] = true
+		} else if i := strings.Index(v, "("); i > 0 && strings.Index(v, ")") == len(v)-1 {
+			name := t[:i]
+			if supportTag[name] == 2 {
+				v = v[i+1 : len(v)-1]
+				tags[name] = v
+			}
+		} else {
+			DebugLog.Println("unsupport orm tag", v)
+		}
+	}
+	return
+}

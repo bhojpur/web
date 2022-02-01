@@ -25,19 +25,19 @@ package authz
 //	import(
 //		"github.com/bhojpur/web/pkg/engine"
 //		"github.com/bhojpur/web/pkg/filter/plugins/authz"
-//		"github.com/casbin/casbin"
+//		plcsvr "github.com/bhopur/policy/pkg/engine"
 //	)
 //
 //	func main(){
 //		// mediate the access for every request
-//		bhojpur.InsertFilter("*", bhojpur.BeforeRouter, authz.NewAuthorizer(casbin.NewEnforcer("authz_model.conf", "authz_policy.csv")))
+//		bhojpur.InsertFilter("*", bhojpur.BeforeRouter, authz.NewAuthorizer(plcsvr.NewEnforcer("authz_model.conf", "authz_policy.csv")))
 //		bhojpur.Run()
 //	}
 //
 // Advanced Usage:
 //
 //	func main(){
-//		e := casbin.NewEnforcer("authz_model.conf", "")
+//		e := plcsvr.NewEnforcer("authz_model.conf", "")
 //		e.AddRoleForUser("alice", "admin")
 //		e.AddPolicy(...)
 //
@@ -48,15 +48,15 @@ package authz
 import (
 	"net/http"
 
-	"github.com/casbin/casbin"
+	plcsvr "github.com/bhojpur/policy/pkg/engine"
 
 	ctxsvr "github.com/bhojpur/web/pkg/context"
 	websvr "github.com/bhojpur/web/pkg/engine"
 )
 
 // NewAuthorizer returns the authorizer.
-// Use a casbin enforcer as input
-func NewAuthorizer(e *casbin.Enforcer) websvr.FilterFunc {
+// Use a Bhojpur Policy enforcer as input
+func NewAuthorizer(e *plcsvr.Enforcer) websvr.FilterFunc {
 	return func(ctx *ctxsvr.Context) {
 		a := &BasicAuthorizer{enforcer: e}
 
@@ -66,9 +66,9 @@ func NewAuthorizer(e *casbin.Enforcer) websvr.FilterFunc {
 	}
 }
 
-// BasicAuthorizer stores the casbin handler
+// BasicAuthorizer stores the Bhojpur Policy handler
 type BasicAuthorizer struct {
-	enforcer *casbin.Enforcer
+	enforcer *plcsvr.Enforcer
 }
 
 // GetUserName gets the user name from the request.

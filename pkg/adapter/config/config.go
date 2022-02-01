@@ -1,5 +1,28 @@
+package config
+
+// Copyright (c) 2018 Bhojpur Consulting Private Limited, India. All rights reserved.
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 // Usage:
 //  import "github.com/bhojpur/web/pkg/core/config"
+//
 // Examples.
 //
 //  cnf, err := config.NewConfig("ini", "config.conf")
@@ -22,14 +45,13 @@
 //  cnf.DIY(key string) (interface{}, error)
 //  cnf.GetSection(section string) (map[string]string, error)
 //  cnf.SaveConfigFile(filename string) error
-package config
 
 import (
 	"github.com/bhojpur/web/pkg/core/config"
 )
 
-// Configer defines how to get and set value from configuration raw data.
-type Configer interface {
+// Configure defines how to get and set value from configuration raw data.
+type Configure interface {
 	Set(key, val string) error   // support section::key type in given key when using ini type.
 	String(key string) string    // support section::key type in key string when using ini and json type; Int,Int64,Bool,Float,DIY are same.
 	Strings(key string) []string // get string slice
@@ -48,10 +70,10 @@ type Configer interface {
 	SaveConfigFile(filename string) error
 }
 
-// Config is the adapter interface for parsing config file to get raw data to Configer.
+// Config is the Adapter interface for parsing config file to get raw data to Configer.
 type Config interface {
-	Parse(key string) (Configer, error)
-	ParseData(data []byte) (Configer, error)
+	Parse(key string) (Configure, error)
+	ParseData(data []byte) (Configure, error)
 }
 
 var adapters = make(map[string]Config)
@@ -65,38 +87,38 @@ func Register(name string, adapter Config) {
 
 // NewConfig adapterName is ini/json/xml/yaml.
 // filename is the config file path.
-func NewConfig(adapterName, filename string) (Configer, error) {
+func NewConfig(adapterName, filename string) (Configure, error) {
 	cfg, err := config.NewConfig(adapterName, filename)
 	if err != nil {
 		return nil, err
 	}
 
 	// it was registered by using Register method
-	res, ok := cfg.(*oldToNewConfigerAdapter)
+	res, ok := cfg.(*oldToNewConfigureAdapter)
 	if ok {
 		return res.delegate, nil
 	}
 
-	return &newToOldConfigerAdapter{
+	return &newToOldConfigureAdapter{
 		delegate: cfg,
 	}, nil
 }
 
 // NewConfigData adapterName is ini/json/xml/yaml.
 // data is the config data.
-func NewConfigData(adapterName string, data []byte) (Configer, error) {
+func NewConfigData(adapterName string, data []byte) (Configure, error) {
 	cfg, err := config.NewConfigData(adapterName, data)
 	if err != nil {
 		return nil, err
 	}
 
 	// it was registered by using Register method
-	res, ok := cfg.(*oldToNewConfigerAdapter)
+	res, ok := cfg.(*oldToNewConfigureAdapter)
 	if ok {
 		return res.delegate, nil
 	}
 
-	return &newToOldConfigerAdapter{
+	return &newToOldConfigureAdapter{
 		delegate: cfg,
 	}, nil
 }

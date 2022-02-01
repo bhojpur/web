@@ -38,36 +38,33 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 
 	logs "github.com/bhojpur/logger/pkg/engine"
-	ctxutl "github.com/bhojpur/web/pkg/context"
-
+	beecontext "github.com/bhojpur/web/pkg/context"
 	"github.com/bhojpur/web/pkg/core/utils"
 	"github.com/bhojpur/web/pkg/grace"
 )
 
-var (
-	// WebEngine is a Bhojpur.NET Platform web server instance
-	// If you are using single server, you could use this
-	// But if you need multiple servers, do not use this
-	WebEngine *HttpServer
-)
+// BhojpurApp is an application instance
+// If you are using single server, you could use this
+// But if you need multiple servers, do not use this
+var BhojpurApp *HttpServer
 
 func init() {
-	// create Bhojpur.NET Platform web server instance
-	WebEngine = NewHttpSever()
+	// create Bhojpur.NET Platform application
+	BhojpurApp = NewHttpSever()
 }
 
-// HttpServer defines Bhojpur.NET Platform web server with a new PatternServeMux.
+// HttpServer defines Bhojpur.NET Platform application with a new PatternServeMux.
 type HttpServer struct {
 	Handlers *ControllerRegister
 	Server   *http.Server
 	Cfg      *Config
 }
 
-// NewHttpSever returns a new Bhojpur.NET Platform web server instance.
-// this method will use the BasConfig as the configure to create HttpServer
-// Be careful that when you update BasConfig, the server's Cfg will be updated too
+// NewHttpSever returns a new Bhojpur.NET Platform application.
+// this method will use the BConfig as the configure to create HttpServer
+// Be careful that when you update BConfig, the server's Cfg will be updated too
 func NewHttpSever() *HttpServer {
-	return NewHttpServerWithCfg(BasConfig)
+	return NewHttpServerWithCfg(BConfig)
 }
 
 // NewHttpServerWithCfg will create an sever with specific cfg
@@ -85,12 +82,13 @@ func NewHttpServerWithCfg(cfg *Config) *HttpServer {
 // MiddleWare function for http.Handler
 type MiddleWare func(http.Handler) http.Handler
 
-// Run Bhojpur.NET Platform web server instance.
+// Run Bhojpur.NET Platform application.
 func (app *HttpServer) Run(addr string, mws ...MiddleWare) {
-
 	initBeforeHTTPRun()
 
+	// init...
 	app.initAddr(addr)
+	app.Handlers.Init()
 
 	addr = app.Cfg.Listen.HTTPAddr
 
@@ -104,7 +102,7 @@ func (app *HttpServer) Run(addr string, mws ...MiddleWare) {
 		endRunning = make(chan bool, 1)
 	)
 
-	// run CGI server
+	// run cgi server
 	if app.Cfg.Listen.EnableFcgi {
 		if app.Cfg.Listen.EnableStdIo {
 			if err = fcgi.Serve(nil, app.Handlers); err == nil { // standard I/O
@@ -211,7 +209,7 @@ func (app *HttpServer) Run(addr string, mws ...MiddleWare) {
 				logs.Info("Start https server error, conflict with http. Please reset https port")
 				return
 			}
-			logs.Info("Bhojpur HTTPS server running on https://%s", app.Server.Addr)
+			logs.Info("https server Running on https://%s", app.Server.Addr)
 			if app.Cfg.Listen.AutoTLS {
 				m := autocert.Manager{
 					Prompt:     autocert.AcceptTOS,
@@ -239,12 +237,11 @@ func (app *HttpServer) Run(addr string, mws ...MiddleWare) {
 				endRunning <- true
 			}
 		}()
-
 	}
 	if app.Cfg.Listen.EnableHTTP {
 		go func() {
 			app.Server.Addr = addr
-			logs.Info("Bhojpur HTTP server running on http://%s", app.Server.Addr)
+			logs.Info("http server Running on http://%s", app.Server.Addr)
 			if app.Cfg.Listen.ListenTCP4 {
 				ln, err := net.Listen("tcp4", app.Server.Addr)
 				if err != nil {
@@ -273,10 +270,14 @@ func (app *HttpServer) Run(addr string, mws ...MiddleWare) {
 
 // Router see HttpServer.Router
 func Router(rootpath string, c ControllerInterface, mappingMethods ...string) *HttpServer {
-	return WebEngine.Router(rootpath, c, mappingMethods...)
+	return RouterWithOpts(rootpath, c, WithRouterMethods(c, mappingMethods...))
 }
 
-// Router adds a patterned controller handler to BhojpurApp.
+func RouterWithOpts(rootpath string, c ControllerInterface, opts ...ControllerOption) *HttpServer {
+	return BhojpurApp.RouterWithOpts(rootpath, c, opts...)
+}
+
+// Router adds a patterned controller handler to BeeApp.
 // it's an alias method of HttpServer.Router.
 // usage:
 //  simple router
@@ -293,13 +294,17 @@ func Router(rootpath string, c ControllerInterface, mappingMethods ...string) *H
 //  bhojpur.Router("/api/update",&RestController{},"put:UpdateFood")
 //  bhojpur.Router("/api/delete",&RestController{},"delete:DeleteFood")
 func (app *HttpServer) Router(rootPath string, c ControllerInterface, mappingMethods ...string) *HttpServer {
-	app.Handlers.Add(rootPath, c, mappingMethods...)
+	return app.RouterWithOpts(rootPath, c, WithRouterMethods(c, mappingMethods...))
+}
+
+func (app *HttpServer) RouterWithOpts(rootPath string, c ControllerInterface, opts ...ControllerOption) *HttpServer {
+	app.Handlers.Add(rootPath, c, opts...)
 	return app
 }
 
 // UnregisterFixedRoute see HttpServer.UnregisterFixedRoute
 func UnregisterFixedRoute(fixedRoute string, method string) *HttpServer {
-	return WebEngine.UnregisterFixedRoute(fixedRoute, method)
+	return BhojpurApp.UnregisterFixedRoute(fixedRoute, method)
 }
 
 // UnregisterFixedRoute unregisters the route with the specified fixedRoute. It is particularly useful
@@ -382,7 +387,7 @@ func findAndRemoveSingleTree(entryPointTree *Tree) {
 
 // Include see HttpServer.Include
 func Include(cList ...ControllerInterface) *HttpServer {
-	return WebEngine.Include(cList...)
+	return BhojpurApp.Include(cList...)
 }
 
 // Include will generate router file in the router/xxx.go from the controller's comments
@@ -419,10 +424,10 @@ func (app *HttpServer) Include(cList ...ControllerInterface) *HttpServer {
 
 // RESTRouter see HttpServer.RESTRouter
 func RESTRouter(rootpath string, c ControllerInterface) *HttpServer {
-	return WebEngine.RESTRouter(rootpath, c)
+	return BhojpurApp.RESTRouter(rootpath, c)
 }
 
-// RESTRouter adds a restful controller handler to BhojpurApp.
+// RESTRouter adds a restful controller handler to BeeApp.
 // its' controller implements bhojpur.ControllerInterface and
 // defines a param "pattern/:objectId" to visit each resource.
 func (app *HttpServer) RESTRouter(rootpath string, c ControllerInterface) *HttpServer {
@@ -433,12 +438,12 @@ func (app *HttpServer) RESTRouter(rootpath string, c ControllerInterface) *HttpS
 
 // AutoRouter see HttpServer.AutoRouter
 func AutoRouter(c ControllerInterface) *HttpServer {
-	return WebEngine.AutoRouter(c)
+	return BhojpurApp.AutoRouter(c)
 }
 
-// AutoRouter adds defined controller handler to BhojpurApp.
+// AutoRouter adds defined controller handler to BeeApp.
 // it's same to HttpServer.AutoRouter.
-// if bhojpur.AddAuto(&MainContorlller{}) and MainController has methods List and Page,
+// if bhojpur.AddAuto(&MainController{}) and MainController has methods List and Page,
 // visit the url /main/list to exec List function or /main/page to exec Page function.
 func (app *HttpServer) AutoRouter(c ControllerInterface) *HttpServer {
 	app.Handlers.AddAuto(c)
@@ -447,21 +452,181 @@ func (app *HttpServer) AutoRouter(c ControllerInterface) *HttpServer {
 
 // AutoPrefix see HttpServer.AutoPrefix
 func AutoPrefix(prefix string, c ControllerInterface) *HttpServer {
-	return WebEngine.AutoPrefix(prefix, c)
+	return BhojpurApp.AutoPrefix(prefix, c)
 }
 
-// AutoPrefix adds controller handler to BhojpurApp with prefix.
+// AutoPrefix adds controller handler to BeeApp with prefix.
 // it's same to HttpServer.AutoRouterWithPrefix.
-// if bhojpur.AutoPrefix("/admin",&MainContorlller{}) and MainController has methods List and Page,
+// if bhojpur.AutoPrefix("/admin",&MainController{}) and MainController has methods List and Page,
 // visit the url /admin/main/list to exec List function or /admin/main/page to exec Page function.
 func (app *HttpServer) AutoPrefix(prefix string, c ControllerInterface) *HttpServer {
 	app.Handlers.AddAutoPrefix(prefix, c)
 	return app
 }
 
+// CtrlGet see HttpServer.CtrlGet
+func CtrlGet(rootpath string, f interface{}) {
+	BhojpurApp.CtrlGet(rootpath, f)
+}
+
+// CtrlGet used to register router for CtrlGet method
+// usage:
+//    type MyController struct {
+//	     web.Controller
+//    }
+//    func (m MyController) Ping() {
+//	     m.Ctx.Output.Body([]byte("hello world"))
+//    }
+//
+//    CtrlGet("/api/:id", MyController.Ping)
+func (app *HttpServer) CtrlGet(rootpath string, f interface{}) *HttpServer {
+	app.Handlers.CtrlGet(rootpath, f)
+	return app
+}
+
+// CtrlPost see HttpServer.CtrlGet
+func CtrlPost(rootpath string, f interface{}) {
+	BhojpurApp.CtrlPost(rootpath, f)
+}
+
+// CtrlPost used to register router for CtrlPost method
+// usage:
+//    type MyController struct {
+//	     web.Controller
+//    }
+//    func (m MyController) Ping() {
+//	     m.Ctx.Output.Body([]byte("hello world"))
+//    }
+//
+//    CtrlPost("/api/:id", MyController.Ping)
+func (app *HttpServer) CtrlPost(rootpath string, f interface{}) *HttpServer {
+	app.Handlers.CtrlPost(rootpath, f)
+	return app
+}
+
+// CtrlHead see HttpServer.CtrlHead
+func CtrlHead(rootpath string, f interface{}) {
+	BhojpurApp.CtrlHead(rootpath, f)
+}
+
+// CtrlHead used to register router for CtrlHead method
+// usage:
+//    type MyController struct {
+//	     web.Controller
+//    }
+//    func (m MyController) Ping() {
+//	     m.Ctx.Output.Body([]byte("hello world"))
+//    }
+//
+//    CtrlHead("/api/:id", MyController.Ping)
+func (app *HttpServer) CtrlHead(rootpath string, f interface{}) *HttpServer {
+	app.Handlers.CtrlHead(rootpath, f)
+	return app
+}
+
+// CtrlPut see HttpServer.CtrlPut
+func CtrlPut(rootpath string, f interface{}) {
+	BhojpurApp.CtrlPut(rootpath, f)
+}
+
+// CtrlPut used to register router for CtrlPut method
+// usage:
+//    type MyController struct {
+//	     web.Controller
+//    }
+//    func (m MyController) Ping() {
+//	     m.Ctx.Output.Body([]byte("hello world"))
+//    }
+//
+//    CtrlPut("/api/:id", MyController.Ping)
+func (app *HttpServer) CtrlPut(rootpath string, f interface{}) *HttpServer {
+	app.Handlers.CtrlPut(rootpath, f)
+	return app
+}
+
+// CtrlPatch see HttpServer.CtrlPatch
+func CtrlPatch(rootpath string, f interface{}) {
+	BhojpurApp.CtrlPatch(rootpath, f)
+}
+
+// CtrlPatch used to register router for CtrlPatch method
+// usage:
+//    type MyController struct {
+//	     web.Controller
+//    }
+//    func (m MyController) Ping() {
+//	     m.Ctx.Output.Body([]byte("hello world"))
+//    }
+//
+//    CtrlPatch("/api/:id", MyController.Ping)
+func (app *HttpServer) CtrlPatch(rootpath string, f interface{}) *HttpServer {
+	app.Handlers.CtrlPatch(rootpath, f)
+	return app
+}
+
+// CtrlDelete see HttpServer.CtrlDelete
+func CtrlDelete(rootpath string, f interface{}) {
+	BhojpurApp.CtrlDelete(rootpath, f)
+}
+
+// CtrlDelete used to register router for CtrlDelete method
+// usage:
+//    type MyController struct {
+//	     web.Controller
+//    }
+//    func (m MyController) Ping() {
+//	     m.Ctx.Output.Body([]byte("hello world"))
+//    }
+//
+//    CtrlDelete("/api/:id", MyController.Ping)
+func (app *HttpServer) CtrlDelete(rootpath string, f interface{}) *HttpServer {
+	app.Handlers.CtrlDelete(rootpath, f)
+	return app
+}
+
+// CtrlOptions see HttpServer.CtrlOptions
+func CtrlOptions(rootpath string, f interface{}) {
+	BhojpurApp.CtrlOptions(rootpath, f)
+}
+
+// CtrlOptions used to register router for CtrlOptions method
+// usage:
+//    type MyController struct {
+//	     web.Controller
+//    }
+//    func (m MyController) Ping() {
+//	     m.Ctx.Output.Body([]byte("hello world"))
+//    }
+//
+//    CtrlOptions("/api/:id", MyController.Ping)
+func (app *HttpServer) CtrlOptions(rootpath string, f interface{}) *HttpServer {
+	app.Handlers.CtrlOptions(rootpath, f)
+	return app
+}
+
+// CtrlAny see HttpServer.CtrlAny
+func CtrlAny(rootpath string, f interface{}) {
+	BhojpurApp.CtrlAny(rootpath, f)
+}
+
+// CtrlAny used to register router for CtrlAny method
+// usage:
+//    type MyController struct {
+//	     web.Controller
+//    }
+//    func (m MyController) Ping() {
+//	     m.Ctx.Output.Body([]byte("hello world"))
+//    }
+//
+//    CtrlAny("/api/:id", MyController.Ping)
+func (app *HttpServer) CtrlAny(rootpath string, f interface{}) *HttpServer {
+	app.Handlers.CtrlAny(rootpath, f)
+	return app
+}
+
 // Get see HttpServer.Get
-func Get(rootpath string, f FilterFunc) *HttpServer {
-	return WebEngine.Get(rootpath, f)
+func Get(rootpath string, f HandleFunc) *HttpServer {
+	return BhojpurApp.Get(rootpath, f)
 }
 
 // Get used to register router for Get method
@@ -469,14 +634,14 @@ func Get(rootpath string, f FilterFunc) *HttpServer {
 //    bhojpur.Get("/", func(ctx *context.Context){
 //          ctx.Output.Body("hello world")
 //    })
-func (app *HttpServer) Get(rootpath string, f FilterFunc) *HttpServer {
+func (app *HttpServer) Get(rootpath string, f HandleFunc) *HttpServer {
 	app.Handlers.Get(rootpath, f)
 	return app
 }
 
 // Post see HttpServer.Post
-func Post(rootpath string, f FilterFunc) *HttpServer {
-	return WebEngine.Post(rootpath, f)
+func Post(rootpath string, f HandleFunc) *HttpServer {
+	return BhojpurApp.Post(rootpath, f)
 }
 
 // Post used to register router for Post method
@@ -484,14 +649,14 @@ func Post(rootpath string, f FilterFunc) *HttpServer {
 //    bhojpur.Post("/api", func(ctx *context.Context){
 //          ctx.Output.Body("hello world")
 //    })
-func (app *HttpServer) Post(rootpath string, f FilterFunc) *HttpServer {
+func (app *HttpServer) Post(rootpath string, f HandleFunc) *HttpServer {
 	app.Handlers.Post(rootpath, f)
 	return app
 }
 
 // Delete see HttpServer.Delete
-func Delete(rootpath string, f FilterFunc) *HttpServer {
-	return WebEngine.Delete(rootpath, f)
+func Delete(rootpath string, f HandleFunc) *HttpServer {
+	return BhojpurApp.Delete(rootpath, f)
 }
 
 // Delete used to register router for Delete method
@@ -499,14 +664,14 @@ func Delete(rootpath string, f FilterFunc) *HttpServer {
 //    bhojpur.Delete("/api", func(ctx *context.Context){
 //          ctx.Output.Body("hello world")
 //    })
-func (app *HttpServer) Delete(rootpath string, f FilterFunc) *HttpServer {
+func (app *HttpServer) Delete(rootpath string, f HandleFunc) *HttpServer {
 	app.Handlers.Delete(rootpath, f)
 	return app
 }
 
 // Put see HttpServer.Put
-func Put(rootpath string, f FilterFunc) *HttpServer {
-	return WebEngine.Put(rootpath, f)
+func Put(rootpath string, f HandleFunc) *HttpServer {
+	return BhojpurApp.Put(rootpath, f)
 }
 
 // Put used to register router for Put method
@@ -514,14 +679,14 @@ func Put(rootpath string, f FilterFunc) *HttpServer {
 //    bhojpur.Put("/api", func(ctx *context.Context){
 //          ctx.Output.Body("hello world")
 //    })
-func (app *HttpServer) Put(rootpath string, f FilterFunc) *HttpServer {
+func (app *HttpServer) Put(rootpath string, f HandleFunc) *HttpServer {
 	app.Handlers.Put(rootpath, f)
 	return app
 }
 
 // Head see HttpServer.Head
-func Head(rootpath string, f FilterFunc) *HttpServer {
-	return WebEngine.Head(rootpath, f)
+func Head(rootpath string, f HandleFunc) *HttpServer {
+	return BhojpurApp.Head(rootpath, f)
 }
 
 // Head used to register router for Head method
@@ -529,15 +694,15 @@ func Head(rootpath string, f FilterFunc) *HttpServer {
 //    bhojpur.Head("/api", func(ctx *context.Context){
 //          ctx.Output.Body("hello world")
 //    })
-func (app *HttpServer) Head(rootpath string, f FilterFunc) *HttpServer {
+func (app *HttpServer) Head(rootpath string, f HandleFunc) *HttpServer {
 	app.Handlers.Head(rootpath, f)
 	return app
 }
 
 // Options see HttpServer.Options
-func Options(rootpath string, f FilterFunc) *HttpServer {
-	WebEngine.Handlers.Options(rootpath, f)
-	return WebEngine
+func Options(rootpath string, f HandleFunc) *HttpServer {
+	BhojpurApp.Handlers.Options(rootpath, f)
+	return BhojpurApp
 }
 
 // Options used to register router for Options method
@@ -545,14 +710,14 @@ func Options(rootpath string, f FilterFunc) *HttpServer {
 //    bhojpur.Options("/api", func(ctx *context.Context){
 //          ctx.Output.Body("hello world")
 //    })
-func (app *HttpServer) Options(rootpath string, f FilterFunc) *HttpServer {
+func (app *HttpServer) Options(rootpath string, f HandleFunc) *HttpServer {
 	app.Handlers.Options(rootpath, f)
 	return app
 }
 
 // Patch see HttpServer.Patch
-func Patch(rootpath string, f FilterFunc) *HttpServer {
-	return WebEngine.Patch(rootpath, f)
+func Patch(rootpath string, f HandleFunc) *HttpServer {
+	return BhojpurApp.Patch(rootpath, f)
 }
 
 // Patch used to register router for Patch method
@@ -560,14 +725,14 @@ func Patch(rootpath string, f FilterFunc) *HttpServer {
 //    bhojpur.Patch("/api", func(ctx *context.Context){
 //          ctx.Output.Body("hello world")
 //    })
-func (app *HttpServer) Patch(rootpath string, f FilterFunc) *HttpServer {
+func (app *HttpServer) Patch(rootpath string, f HandleFunc) *HttpServer {
 	app.Handlers.Patch(rootpath, f)
 	return app
 }
 
 // Any see HttpServer.Any
-func Any(rootpath string, f FilterFunc) *HttpServer {
-	return WebEngine.Any(rootpath, f)
+func Any(rootpath string, f HandleFunc) *HttpServer {
+	return BhojpurApp.Any(rootpath, f)
 }
 
 // Any used to register router for all methods
@@ -575,14 +740,14 @@ func Any(rootpath string, f FilterFunc) *HttpServer {
 //    bhojpur.Any("/api", func(ctx *context.Context){
 //          ctx.Output.Body("hello world")
 //    })
-func (app *HttpServer) Any(rootpath string, f FilterFunc) *HttpServer {
+func (app *HttpServer) Any(rootpath string, f HandleFunc) *HttpServer {
 	app.Handlers.Any(rootpath, f)
 	return app
 }
 
 // Handler see HttpServer.Handler
 func Handler(rootpath string, h http.Handler, options ...interface{}) *HttpServer {
-	return WebEngine.Handler(rootpath, h, options...)
+	return BhojpurApp.Handler(rootpath, h, options...)
 }
 
 // Handler used to register a Handler router
@@ -597,7 +762,7 @@ func (app *HttpServer) Handler(rootpath string, h http.Handler, options ...inter
 
 // InserFilter see HttpServer.InsertFilter
 func InsertFilter(pattern string, pos int, filter FilterFunc, opts ...FilterOpt) *HttpServer {
-	return WebEngine.InsertFilter(pattern, pos, filter, opts...)
+	return BhojpurApp.InsertFilter(pattern, pos, filter, opts...)
 }
 
 // InsertFilter adds a FilterFunc with pattern condition and action constant.
@@ -611,7 +776,7 @@ func (app *HttpServer) InsertFilter(pattern string, pos int, filter FilterFunc, 
 
 // InsertFilterChain see HttpServer.InsertFilterChain
 func InsertFilterChain(pattern string, filterChain FilterChain, opts ...FilterOpt) *HttpServer {
-	return WebEngine.InsertFilterChain(pattern, filterChain, opts...)
+	return BhojpurApp.InsertFilterChain(pattern, filterChain, opts...)
 }
 
 // InsertFilterChain adds a FilterFunc built by filterChain.
@@ -634,7 +799,7 @@ func (app *HttpServer) initAddr(addr string) {
 	}
 }
 
-func (app *HttpServer) LogAccess(ctx *ctxutl.Context, startTime *time.Time, statusCode int) {
+func (app *HttpServer) LogAccess(ctx *beecontext.Context, startTime *time.Time, statusCode int) {
 	// Skip logging if AccessLogs config is false
 	if !app.Cfg.Log.AccessLogs {
 		return
@@ -701,21 +866,21 @@ func printTree(resultList *[][]string, t *Tree) {
 	for _, l := range t.leaves {
 		if v, ok := l.runObject.(*ControllerInfo); ok {
 			if v.routerType == routerTypeBhojpur {
-				var result = []string{
+				result := []string{
 					template.HTMLEscapeString(v.pattern),
 					template.HTMLEscapeString(fmt.Sprintf("%s", v.methods)),
 					template.HTMLEscapeString(v.controllerType.String()),
 				}
 				*resultList = append(*resultList, result)
 			} else if v.routerType == routerTypeRESTFul {
-				var result = []string{
+				result := []string{
 					template.HTMLEscapeString(v.pattern),
 					template.HTMLEscapeString(fmt.Sprintf("%s", v.methods)),
 					"",
 				}
 				*resultList = append(*resultList, result)
 			} else if v.routerType == routerTypeHandler {
-				var result = []string{
+				result := []string{
 					template.HTMLEscapeString(v.pattern),
 					"",
 					"",
@@ -741,7 +906,7 @@ func (app *HttpServer) reportFilter() M {
 			if bf := app.Handlers.filters[k]; len(bf) > 0 {
 				resultList := new([][]string)
 				for _, f := range bf {
-					var result = []string{
+					result := []string{
 						// void xss
 						template.HTMLEscapeString(f.pattern),
 						template.HTMLEscapeString(utils.GetFuncName(f.filterFunc)),

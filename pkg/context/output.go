@@ -294,7 +294,6 @@ func (output *BhojpurOutput) Download(file string, filename ...string) {
 	} else {
 		fName = filepath.Base(file)
 	}
-	//https://tools.ietf.org/html/rfc6266#section-4.3
 	fn := url.PathEscape(fName)
 	if fName == fn {
 		fn = "filename=" + fn

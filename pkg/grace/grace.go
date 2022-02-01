@@ -20,7 +20,7 @@ package grace
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package grace use to hot reload
+// Grace is used to hot reload
 //
 // Usage:
 //

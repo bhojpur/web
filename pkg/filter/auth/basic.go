@@ -20,7 +20,7 @@ package auth
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package auth provides handlers to enable basic auth support.
+// Auth provides handlers to enable basic auth support.
 // Simple Usage:
 //	import(
 //		"github.com/bhojpur/web/pkg/engine"
@@ -32,7 +32,6 @@ package auth
 //		bhojpur.InsertFilter("*", bhojpur.BeforeRouter,auth.Basic("username","secretpassword"))
 //		bhojpur.Run()
 //	}
-//
 //
 // Advanced Usage:
 //
