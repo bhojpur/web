@@ -145,7 +145,7 @@ func TestParseForm(t *testing.T) {
 		"username":     []string{"test"},
 		"age":          []string{"40"},
 		"Email":        []string{"test@bhojpur.net"},
-		"Intro":        []string{"I am an engineer!"},
+		"Intro":        []string{"I am an Engineer!"},
 		"strbool":      []string{"yes"},
 		"date":         []string{"2014-11-12"},
 		"organization": []string{"bhojpur"},
@@ -174,8 +174,8 @@ func TestParseForm(t *testing.T) {
 	if u.Email != "test@bhojpur.net" {
 		t.Errorf("Email should equal `test@bhojpur.net` but got `%v`", u.Email)
 	}
-	if u.Intro != "I am an engineer!" {
-		t.Errorf("Intro should equal `I am an engineer!` but got `%v`", u.Intro)
+	if u.Intro != "I am an Engineer!" {
+		t.Errorf("Intro should equal `I am an Engineer!` but got `%v`", u.Intro)
 	}
 	if !u.StrBool {
 		t.Errorf("strboll should equal `true`, but got `%v`", u.StrBool)

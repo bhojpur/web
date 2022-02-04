@@ -71,7 +71,7 @@ func TestOptionWithEnableCookie(t *testing.T) {
 }
 
 func TestOptionWithUserAgent(t *testing.T) {
-	v := "bhojpur"
+	v := "Bhojpur Webctl"
 	client, err := NewClient("test", "http://httpbin.org/",
 		WithUserAgent(v))
 	if err != nil {
@@ -104,7 +104,7 @@ func TestOptionWithCheckRedirect(t *testing.T) {
 }
 
 func TestOptionWithHTTPSetting(t *testing.T) {
-	v := "bhojpur"
+	v := "Bhojpur Webctl"
 	var setting BhojpurHTTPSettings
 	setting.EnableCookie = true
 	setting.UserAgent = v

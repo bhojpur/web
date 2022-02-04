@@ -146,7 +146,7 @@ func TestParseForm(t *testing.T) {
 		"username":     []string{"test"},
 		"age":          []string{"40"},
 		"Email":        []string{"test@bhojpur.net"},
-		"Intro":        []string{"I am an engineer!"},
+		"Intro":        []string{"I am an Engineer!"},
 		"strbool":      []string{"yes"},
 		"date":         []string{"2014-11-12"},
 		"organization": []string{"bhojpur"},
