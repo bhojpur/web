@@ -23,7 +23,7 @@ package cors
 // It provides handlers to enable CORS support.
 // Usage
 //	import (
-// 		"github.com/bhojpur/web/pkg/engine"
+// 		websvr "github.com/bhojpur/web/pkg/engine"
 //		"github.com/bhojpur/web/pkg/filter/plugins/cors"
 // )
 //
@@ -32,14 +32,14 @@ package cors
 //		// - PUT and PATCH methods
 //		// - Origin header
 //		// - Credentials share
-//		bhojpur.InsertFilter("*", bhojpur.BeforeRouter, cors.Allow(&cors.Options{
-//			AllowOrigins:     []string{"https://*.foo.com"},
+//		websvr.InsertFilter("*", websvr.BeforeRouter, cors.Allow(&cors.Options{
+//			AllowOrigins:     []string{"https://*.bhojpur.net"},
 //			AllowMethods:     []string{"PUT", "PATCH"},
 //			AllowHeaders:     []string{"Origin"},
 //			ExposeHeaders:    []string{"Content-Length"},
 //			AllowCredentials: true,
 //		}))
-//		bhojpur.Run()
+//		websvr.Run()
 //	}
 
 import (

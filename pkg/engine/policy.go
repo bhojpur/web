@@ -31,8 +31,8 @@ type PolicyFunc func(*context.Context)
 
 // FindPolicy Find Router info for URL
 func (p *ControllerRegister) FindPolicy(cont *context.Context) []PolicyFunc {
-	var urlPath = cont.Input.URL()
-	if !BasConfig.RouterCaseSensitive {
+	urlPath := cont.Input.URL()
+	if !BConfig.RouterCaseSensitive {
 		urlPath = strings.ToLower(urlPath)
 	}
 	httpMethod := cont.Input.Method()
@@ -65,7 +65,7 @@ func (p *ControllerRegister) FindPolicy(cont *context.Context) []PolicyFunc {
 func (p *ControllerRegister) addToPolicy(method, pattern string, r ...PolicyFunc) {
 	method = strings.ToUpper(method)
 	p.enablePolicy = true
-	if !BasConfig.RouterCaseSensitive {
+	if !BConfig.RouterCaseSensitive {
 		pattern = strings.ToLower(pattern)
 	}
 	if t, ok := p.policies[method]; ok {
@@ -77,7 +77,7 @@ func (p *ControllerRegister) addToPolicy(method, pattern string, r ...PolicyFunc
 	}
 }
 
-// Policy Register new policy in Bhojpur.NET Platform application
+// Policy Register new policy in Bhojpur Web
 func Policy(pattern, method string, policy ...PolicyFunc) {
 	BhojpurApp.Handlers.addToPolicy(method, pattern, policy...)
 }

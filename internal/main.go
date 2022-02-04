@@ -23,10 +23,10 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"os"
 
-	"github.com/bhojpur/web/pkg/engine"
+	websvr "github.com/bhojpur/web/pkg/engine"
 	"github.com/bhojpur/web/pkg/synthesis"
+	test "github.com/bhojpur/web/test"
 )
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -38,27 +38,16 @@ func namasteHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	var assetfs *synthesis.AssetFS
-	http.Handle("/",
-	http.FileServer(
-		&synthesis.AssetFS{
-			Asset: views.Asset,
-			AssetDir: views.AssetDir,
-			AssetInfo: views.AssetInfo,
-			Prefix: "data",
-			Fallback: "index.html",
-		}))
-}
-
-func web_router()
-	var router = engine.WebEngine
-	router.Get("/", http.HandlerFunc(indexHandler))
-	router.Get("/अभिवादन/:नाम", http.HandlerFunc(namasteHandler))
-	http.Handle("/", router)
-
-	fmt.Println("भोजपुर वेब की सेवा https://localhost:3000 पर शुरू की गई")
-	if err := http.ListenAndServe("0.0.0.0:3000", nil); err != nil {
-		os.Stderr.WriteString("भोजपुर वेब की सेवा शुरू नहीं हो पाई!\n")
-		os.Exit(1)
-	}
+	websvr.Run("127.0.0.1:3000")
+	websvr.AddFuncMap("/", http.HandlerFunc(indexHandler))
+	websvr.AddFuncMap("/अभिवादन/:नाम", http.HandlerFunc(namasteHandler))
+	websvr.AddFuncMap("/",
+		http.FileServer(
+			&synthesis.AssetFS{
+				Asset:     test.Asset,
+				AssetDir:  test.AssetDir,
+				AssetInfo: test.AssetInfo,
+				Prefix:    "data",
+				Fallback:  "index.html",
+			}))
 }

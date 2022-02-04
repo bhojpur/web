@@ -29,30 +29,34 @@ import (
 )
 
 func TestDefaults(t *testing.T) {
-	if BasConfig.WebConfig.FlashName != "BHOJPUR_FLASH" {
+	if BConfig.WebConfig.FlashName != "BHOJPUR_FLASH" {
 		t.Errorf("FlashName was not set to default.")
 	}
 
-	if BasConfig.WebConfig.FlashSeparator != "BHOJPURFLASH" {
+	if BConfig.WebConfig.FlashSeparator != "BHOJPURFLASH" {
 		t.Errorf("FlashName was not set to default.")
 	}
 }
 
+func TestLoadAppConfig(t *testing.T) {
+	println(1 << 30)
+}
+
 func TestAssignConfig_01(t *testing.T) {
-	_BasConfig := &Config{}
-	_BasConfig.AppName = "bhojpur_test"
+	_BConfig := &Config{}
+	_BConfig.AppName = "bhojpur_test"
 	jcf := &webJson.JSONConfig{}
 	ac, _ := jcf.ParseData([]byte(`{"AppName":"bhojpur_json"}`))
-	assignSingleConfig(_BasConfig, ac)
-	if _BasConfig.AppName != "bhojpur_json" {
-		t.Log(_BasConfig)
+	assignSingleConfig(_BConfig, ac)
+	if _BConfig.AppName != "bhojpur_json" {
+		t.Log(_BConfig)
 		t.FailNow()
 	}
 }
 
 func TestAssignConfig_02(t *testing.T) {
-	_BasConfig := &Config{}
-	bs, _ := json.Marshal(newBasConfig())
+	_BConfig := &Config{}
+	bs, _ := json.Marshal(newBConfig())
 
 	jsonMap := M{}
 	json.Unmarshal(bs, &jsonMap)
@@ -83,35 +87,34 @@ func TestAssignConfig_02(t *testing.T) {
 	bs, _ = json.Marshal(configMap)
 	ac, _ := jcf.ParseData(bs)
 
-	for _, i := range []interface{}{_BasConfig, &_BasConfig.Listen, &_BasConfig.WebConfig, &_BasConfig.Log, &_BasConfig.WebConfig.Session} {
+	for _, i := range []interface{}{_BConfig, &_BConfig.Listen, &_BConfig.WebConfig, &_BConfig.Log, &_BConfig.WebConfig.Session} {
 		assignSingleConfig(i, ac)
 	}
 
-	if _BasConfig.MaxMemory != 1024 {
-		t.Log(_BasConfig.MaxMemory)
+	if _BConfig.MaxMemory != 1024 {
+		t.Log(_BConfig.MaxMemory)
 		t.FailNow()
 	}
 
-	if !_BasConfig.Listen.Graceful {
-		t.Log(_BasConfig.Listen.Graceful)
+	if !_BConfig.Listen.Graceful {
+		t.Log(_BConfig.Listen.Graceful)
 		t.FailNow()
 	}
 
-	if _BasConfig.WebConfig.XSRFExpire != 32 {
-		t.Log(_BasConfig.WebConfig.XSRFExpire)
+	if _BConfig.WebConfig.XSRFExpire != 32 {
+		t.Log(_BConfig.WebConfig.XSRFExpire)
 		t.FailNow()
 	}
 
-	if _BasConfig.WebConfig.Session.SessionProviderConfig != "file" {
-		t.Log(_BasConfig.WebConfig.Session.SessionProviderConfig)
+	if _BConfig.WebConfig.Session.SessionProviderConfig != "file" {
+		t.Log(_BConfig.WebConfig.Session.SessionProviderConfig)
 		t.FailNow()
 	}
 
-	if !_BasConfig.Log.FileLineNum {
-		t.Log(_BasConfig.Log.FileLineNum)
+	if !_BConfig.Log.FileLineNum {
+		t.Log(_BConfig.Log.FileLineNum)
 		t.FailNow()
 	}
-
 }
 
 func TestAssignConfig_03(t *testing.T) {
@@ -125,28 +128,28 @@ func TestAssignConfig_03(t *testing.T) {
 	ac.Set("StaticCacheFileNum", "1254")
 	assignConfig(ac)
 
-	t.Logf("%#v", BasConfig)
+	t.Logf("%#v", BConfig)
 
-	if BasConfig.AppName != "test_app" {
+	if BConfig.AppName != "test_app" {
 		t.FailNow()
 	}
 
-	if BasConfig.RunMode != "online" {
+	if BConfig.RunMode != "online" {
 		t.FailNow()
 	}
-	if BasConfig.WebConfig.StaticDir["/download"] != "down" {
+	if BConfig.WebConfig.StaticDir["/download"] != "down" {
 		t.FailNow()
 	}
-	if BasConfig.WebConfig.StaticDir["/download2"] != "down2" {
+	if BConfig.WebConfig.StaticDir["/download2"] != "down2" {
 		t.FailNow()
 	}
-	if BasConfig.WebConfig.StaticCacheFileSize != 87456 {
+	if BConfig.WebConfig.StaticCacheFileSize != 87456 {
 		t.FailNow()
 	}
-	if BasConfig.WebConfig.StaticCacheFileNum != 1254 {
+	if BConfig.WebConfig.StaticCacheFileNum != 1254 {
 		t.FailNow()
 	}
-	if len(BasConfig.WebConfig.StaticExtensionsToGzip) != 5 {
+	if len(BConfig.WebConfig.StaticExtensionsToGzip) != 5 {
 		t.FailNow()
 	}
 }

@@ -38,7 +38,7 @@ func getParser(param *MethodParam, t reflect.Type) paramParser {
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		return intParser{}
 	case reflect.Slice:
-		if t.Elem().Kind() == reflect.Uint8 { //treat []byte as string
+		if t.Elem().Kind() == reflect.Uint8 { // treat []byte as string
 			return stringParser{}
 		}
 		if param.in == body {
@@ -75,29 +75,25 @@ func (f parserFunc) parse(value string, toType reflect.Type) (interface{}, error
 	return f(value, toType)
 }
 
-type boolParser struct {
-}
+type boolParser struct{}
 
 func (p boolParser) parse(value string, toType reflect.Type) (interface{}, error) {
 	return strconv.ParseBool(value)
 }
 
-type stringParser struct {
-}
+type stringParser struct{}
 
 func (p stringParser) parse(value string, toType reflect.Type) (interface{}, error) {
 	return value, nil
 }
 
-type intParser struct {
-}
+type intParser struct{}
 
 func (p intParser) parse(value string, toType reflect.Type) (interface{}, error) {
 	return strconv.Atoi(value)
 }
 
-type floatParser struct {
-}
+type floatParser struct{}
 
 func (p floatParser) parse(value string, toType reflect.Type) (interface{}, error) {
 	if toType.Kind() == reflect.Float32 {
@@ -110,8 +106,7 @@ func (p floatParser) parse(value string, toType reflect.Type) (interface{}, erro
 	return strconv.ParseFloat(value, 64)
 }
 
-type timeParser struct {
-}
+type timeParser struct{}
 
 func (p timeParser) parse(value string, toType reflect.Type) (result interface{}, err error) {
 	result, err = time.Parse(time.RFC3339, value)
@@ -121,8 +116,7 @@ func (p timeParser) parse(value string, toType reflect.Type) (result interface{}
 	return
 }
 
-type jsonParser struct {
-}
+type jsonParser struct{}
 
 func (p jsonParser) parse(value string, toType reflect.Type) (interface{}, error) {
 	pResult := reflect.New(toType)

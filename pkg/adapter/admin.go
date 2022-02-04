@@ -47,5 +47,5 @@ var FilterMonitorFunc func(string, string, time.Duration, string, int) bool
 
 // PrintTree prints all registered routers.
 func PrintTree() M {
-	return (M)(websvr.WebEngine.PrintTree())
+	return (M)(websvr.BhojpurApp.PrintTree())
 }

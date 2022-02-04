@@ -209,7 +209,7 @@ func (o *ormer) LoadRelated(md interface{}, name string, args ...interface{}) (i
 // return a QuerySeter for table operations.
 // table name can be string or struct.
 // e.g. QueryTable("user"), QueryTable(&user{}) or QueryTable((*User)(nil)),
-func (o *ormer) QueryTable(ptrStructOrTableName interface{}) (qs QuerySeter) {
+func (o *ormer) QueryTable(ptrStructOrTableName interface{}) (qs QuerySetter) {
 	if o.isTx {
 		return o.txDelegate.QueryTable(ptrStructOrTableName)
 	}

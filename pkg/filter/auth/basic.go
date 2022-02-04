@@ -20,33 +20,34 @@ package auth
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Auth provides handlers to enable basic auth support.
+// It provides handlers to enable basic auth support.
 // Simple Usage:
 //	import(
-//		"github.com/bhojpur/web/pkg/engine"
+//		websvr "github.com/bhojpur/web/pkg/engine"
 //		"github.com/bhojpur/web/pkg/filter/auth"
 //	)
 //
 //	func main(){
 //		// authenticate every request
-//		bhojpur.InsertFilter("*", bhojpur.BeforeRouter,auth.Basic("username","secretpassword"))
-//		bhojpur.Run()
+//		websvr.InsertFilter("*", websvr.BeforeRouter, auth.Basic("username","secretpassword"))
+//		websvr.Run()
 //	}
+//
 //
 // Advanced Usage:
 //
 //	func SecretAuth(username, password string) bool {
-//		return username == "bhojpur" && password == "welcome"
+//		return username == "bhojpur" && password == "helloBhojpur"
 //	}
 //	authPlugin := auth.NewBasicAuthenticator(SecretAuth, "Authorization Required")
-//	bhojpur.InsertFilter("*", bhojpur.BeforeRouter,authPlugin)
+//	websvr.InsertFilter("*", websvr.BeforeRouter,authPlugin)
 
 import (
 	"encoding/base64"
 	"net/http"
 	"strings"
 
-	ctxsvr "github.com/bhojpur/web/pkg/context"
+	"github.com/bhojpur/web/pkg/context"
 	websvr "github.com/bhojpur/web/pkg/engine"
 )
 
@@ -62,7 +63,7 @@ func Basic(username string, password string) websvr.FilterFunc {
 
 // NewBasicAuthenticator return the BasicAuth
 func NewBasicAuthenticator(secrets SecretProvider, Realm string) websvr.FilterFunc {
-	return func(ctx *ctxsvr.Context) {
+	return func(ctx *context.Context) {
 		a := &BasicAuth{Secrets: secrets, Realm: Realm}
 		if username := a.CheckAuth(ctx.Request); username == "" {
 			a.RequireAuth(ctx.ResponseWriter, ctx.Request)

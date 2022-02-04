@@ -75,7 +75,7 @@ import (
 	"time"
 
 	imageutl "github.com/bhojpur/image/pkg/synthesis"
-	logs "github.com/bhojpur/logger/pkg/engine"
+	logsvr "github.com/bhojpur/logger/pkg/engine"
 	token "github.com/bhojpur/token/pkg/utils"
 	"github.com/bhojpur/web/pkg/context"
 	"github.com/bhojpur/web/pkg/engine"
@@ -148,7 +148,7 @@ func (c *Captcha) Handler(ctx *context.Context) {
 		if err := c.store.Put(context2.Background(), key, chars, c.Expiration); err != nil {
 			ctx.Output.SetStatus(500)
 			ctx.WriteString("captcha reload error")
-			logs.Error("Reload Create Captcha Error:", err)
+			logsvr.Error("Reload Create Captcha Error:", err)
 			return
 		}
 	} else {
@@ -164,7 +164,7 @@ func (c *Captcha) Handler(ctx *context.Context) {
 
 	img := imageutl.NewImage(chars, c.StdWidth, c.StdHeight)
 	if _, err := img.WriteTo(ctx.ResponseWriter); err != nil {
-		logs.Error("Write Captcha Image Error:", err)
+		logsvr.Error("Write Captcha Image Error:", err)
 	}
 }
 
@@ -172,7 +172,7 @@ func (c *Captcha) Handler(ctx *context.Context) {
 func (c *Captcha) CreateCaptchaHTML() template.HTML {
 	value, err := c.CreateCaptcha()
 	if err != nil {
-		logs.Error("Create Captcha Error:", err)
+		logsvr.Error("Create Captcha Error:", err)
 		return ""
 	}
 

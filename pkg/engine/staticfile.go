@@ -32,9 +32,9 @@ import (
 	"sync"
 	"time"
 
-	logs "github.com/bhojpur/logger/pkg/engine"
 	lru "github.com/hashicorp/golang-lru"
 
+	logsvr "github.com/bhojpur/logger/pkg/engine"
 	"github.com/bhojpur/web/pkg/context"
 )
 
@@ -56,8 +56,8 @@ func serverStaticRouter(ctx *context.Context) {
 	}
 
 	if filePath == "" || fileInfo == nil {
-		if BasConfig.RunMode == DEV {
-			logs.Warn("Can't find/open the file:", filePath, err)
+		if BConfig.RunMode == DEV {
+			logsvr.Warn("Can't find/open the file:", filePath, err)
 		}
 		http.NotFound(ctx.ResponseWriter, ctx.Request)
 		return
@@ -71,25 +71,25 @@ func serverStaticRouter(ctx *context.Context) {
 			}
 			ctx.Redirect(302, redirectURL)
 		} else {
-			//serveFile will list dir
+			// serveFile will list dir
 			http.ServeFile(ctx.ResponseWriter, ctx.Request, filePath)
 		}
 		return
-	} else if fileInfo.Size() > int64(BasConfig.WebConfig.StaticCacheFileSize) {
-		//over size file serve with http module
+	} else if fileInfo.Size() > int64(BConfig.WebConfig.StaticCacheFileSize) {
+		// over size file serve with http module
 		http.ServeFile(ctx.ResponseWriter, ctx.Request, filePath)
 		return
 	}
 
-	var enableCompress = BasConfig.EnableGzip && isStaticCompress(filePath)
+	enableCompress := BConfig.EnableGzip && isStaticCompress(filePath)
 	var acceptEncoding string
 	if enableCompress {
 		acceptEncoding = context.ParseEncoding(ctx.Request)
 	}
 	b, n, sch, reader, err := openFile(filePath, fileInfo, acceptEncoding)
 	if err != nil {
-		if BasConfig.RunMode == DEV {
-			logs.Warn("Can't compress the file:", filePath, err)
+		if BConfig.RunMode == DEV {
+			logsvr.Warn("Can't compress the file:", filePath, err)
 		}
 		http.NotFound(ctx.ResponseWriter, ctx.Request)
 		return
@@ -108,7 +108,7 @@ type serveContentHolder struct {
 	data       []byte
 	modTime    time.Time
 	size       int64
-	originSize int64 //original file size:to judge file changed
+	originSize int64 // original file size:to judge file changed
 	encoding   string
 }
 
@@ -123,9 +123,9 @@ var (
 
 func openFile(filePath string, fi os.FileInfo, acceptEncoding string) (bool, string, *serveContentHolder, *serveContentReader, error) {
 	if staticFileLruCache == nil {
-		//avoid lru cache error
-		if BasConfig.WebConfig.StaticCacheFileNum >= 1 {
-			staticFileLruCache, _ = lru.New(BasConfig.WebConfig.StaticCacheFileNum)
+		// avoid lru cache error
+		if BConfig.WebConfig.StaticCacheFileNum >= 1 {
+			staticFileLruCache, _ = lru.New(BConfig.WebConfig.StaticCacheFileNum)
 		} else {
 			staticFileLruCache, _ = lru.New(1)
 		}
@@ -170,7 +170,7 @@ func openFile(filePath string, fi os.FileInfo, acceptEncoding string) (bool, str
 func isOk(s *serveContentHolder, fi os.FileInfo) bool {
 	if s == nil {
 		return false
-	} else if s.size > int64(BasConfig.WebConfig.StaticCacheFileSize) {
+	} else if s.size > int64(BConfig.WebConfig.StaticCacheFileSize) {
 		return false
 	}
 	return s.modTime == fi.ModTime() && s.originSize == fi.Size()
@@ -178,7 +178,7 @@ func isOk(s *serveContentHolder, fi os.FileInfo) bool {
 
 // isStaticCompress detect static files
 func isStaticCompress(filePath string) bool {
-	for _, statExtension := range BasConfig.WeBasConfig.StaticExtensionsToGzip {
+	for _, statExtension := range BConfig.WebConfig.StaticExtensionsToGzip {
 		if strings.HasSuffix(strings.ToLower(filePath), strings.ToLower(statExtension)) {
 			return true
 		}
@@ -196,7 +196,7 @@ func searchFile(ctx *context.Context) (string, os.FileInfo, error) {
 		if fi, _ := os.Stat(file); fi != nil {
 			return file, fi, nil
 		}
-		for _, staticDir := range BasConfig.WebConfig.StaticDir {
+		for _, staticDir := range BConfig.WebConfig.StaticDir {
 			filePath := path.Join(staticDir, requestPath)
 			if fi, _ := os.Stat(filePath); fi != nil {
 				return filePath, fi, nil
@@ -205,7 +205,7 @@ func searchFile(ctx *context.Context) (string, os.FileInfo, error) {
 		return "", nil, errNotStaticRequest
 	}
 
-	for prefix, staticDir := range BasConfig.WebConfig.StaticDir {
+	for prefix, staticDir := range BConfig.WebConfig.StaticDir {
 		if !strings.Contains(requestPath, prefix) {
 			continue
 		}
@@ -237,5 +237,5 @@ func lookupFile(ctx *context.Context) (bool, string, os.FileInfo, error) {
 			return false, ifp, ifi, err
 		}
 	}
-	return !BasConfig.WebConfig.DirectoryIndex, fp, fi, err
+	return !BConfig.WebConfig.DirectoryIndex, fp, fi, err
 }

@@ -30,7 +30,7 @@ import (
 	"strings"
 
 	webapp "github.com/bhojpur/web/pkg"
-	ctxsvr "github.com/bhojpur/web/pkg/context"
+	"github.com/bhojpur/web/pkg/context"
 	"github.com/bhojpur/web/pkg/core/utils"
 )
 
@@ -81,18 +81,18 @@ var tpl = `
         </div>
     </div>
     <div id="footer">
-        <p>Bhojpur Web - Server {{ .bhojpurVersion }}</p>
-        <p>Powered by Go {{.GoVersion}}</p>
+        <p>Bhojpur Web {{ .BhojpurVersion }} (application framework)</p>
+        <p>Go version: {{.GoVersion}}</p>
     </div>
 </body>
 </html>
 `
 
 // render default application error page with error and stack string.
-func showErr(err interface{}, ctx *ctxsvr.Context, stack string) {
+func showErr(err interface{}, ctx *context.Context, stack string) {
 	t, _ := template.New("bhojpurerrortemp").Parse(tpl)
 	data := map[string]string{
-		"AppError":       fmt.Sprintf("%s:%v", BasConfig.AppName, err),
+		"AppError":       fmt.Sprintf("%s:%v", BConfig.AppName, err),
 		"RequestMethod":  ctx.Input.Method(),
 		"RequestURL":     ctx.Input.URI(),
 		"RemoteAddr":     ctx.Input.IP(),
@@ -114,12 +114,10 @@ var errtpl = `
 				margin:0;
 				padding:0;
 			}
-
 			body {
 				background-color:#EFEFEF;
 				font: .9em "Lucida Sans Unicode", "Lucida Grande", sans-serif;
 			}
-
 			#wrapper{
 				width:600px;
 				margin:40px auto 0;
@@ -128,13 +126,11 @@ var errtpl = `
 				-webkit-box-shadow: 5px 5px 10px rgba(0,0,0,0.3);
 				box-shadow: 5px 5px 10px rgba(0,0,0,0.3);
 			}
-
 			#wrapper h1{
 				color:#FFF;
 				text-align:center;
 				margin-bottom:20px;
 			}
-
 			#wrapper a{
 				display:block;
 				font-size:.9em;
@@ -143,26 +139,22 @@ var errtpl = `
 				text-decoration:none;
 				text-align:center;
 			}
-
 			#container {
 				width:600px;
 				padding-bottom:15px;
 				background-color:#FFFFFF;
 			}
-
 			.navtop{
 				height:40px;
 				background-color:#24B2EB;
 				padding:13px;
 			}
-
 			.content {
 				padding:10px 10px 25px;
 				background: #FFFFFF;
 				margin:;
 				color:#333;
 			}
-
 			a.button{
 				color:white;
 				padding:15px 20px;
@@ -177,12 +169,10 @@ var errtpl = `
 				-moz-border-radius:100px;
 				-webkit-border-radius:100px;
 			}
-
 			a.button:hover{
 				text-decoration:none;
 				background-color: #24B2EB;
 			}
-
 		</style>
 	</head>
 	<body>
@@ -194,8 +184,7 @@ var errtpl = `
 				<div id="content">
 					{{.Content}}
 					<a href="/" title="Home" class="button">Go Home</a><br />
-
-					<br>Powered by Bhojpur Web - Server {{.BhojpurVersion}}
+					<br>Powered by Bhojpur Web {{.BhojpurVersion}}
 				</div>
 			</div>
 		</div>
@@ -282,7 +271,7 @@ func invalidxsrf(rw http.ResponseWriter, r *http.Request) {
 func notFound(rw http.ResponseWriter, r *http.Request) {
 	responseError(rw, r,
 		404,
-		"<br>The page you have requested has flown the coop."+
+		"<br>The page you have requested has flown the Arrah (Bihar, India)."+
 			"<br>Perhaps you are here because:"+
 			"<br><br><ul>"+
 			"<br>The page has moved"+
@@ -392,20 +381,20 @@ func responseError(rw http.ResponseWriter, r *http.Request, errCode int, errCont
 
 // ErrorHandler registers http.HandlerFunc to each http err code string.
 // usage:
-// 	bhojpur.ErrorHandler("404",NotFound)
-//	bhojpur.ErrorHandler("500",InternalServerError)
+// 	websvr.ErrorHandler("404",NotFound)
+//	websvr.ErrorHandler("500",InternalServerError)
 func ErrorHandler(code string, h http.HandlerFunc) *HttpServer {
 	ErrorMaps[code] = &errorInfo{
 		errorType: errorTypeHandler,
 		handler:   h,
 		method:    code,
 	}
-	return WebEngine
+	return BhojpurApp
 }
 
 // ErrorController registers ControllerInterface to each http err code string.
 // usage:
-// 	bhojpur.ErrorController(&controllers.ErrorController{})
+// 	websvr.ErrorController(&controllers.ErrorController{})
 func ErrorController(c ControllerInterface) *HttpServer {
 	reflectVal := reflect.ValueOf(c)
 	rt := reflectVal.Type()
@@ -421,17 +410,17 @@ func ErrorController(c ControllerInterface) *HttpServer {
 			}
 		}
 	}
-	return WebEngine
+	return BhojpurApp
 }
 
 // Exception Write HttpStatus with errCode and Exec error handler if exist.
-func Exception(errCode uint64, ctx *ctxsvr.Context) {
+func Exception(errCode uint64, ctx *context.Context) {
 	exception(strconv.FormatUint(errCode, 10), ctx)
 }
 
 // show error string as simple text message.
 // if error string is empty, show 503 or 500 error as default.
-func exception(errCode string, ctx *ctxsvr.Context) {
+func exception(errCode string, ctx *context.Context) {
 	atoi := func(code string) int {
 		v, err := strconv.Atoi(code)
 		if err == nil {
@@ -449,13 +438,13 @@ func exception(errCode string, ctx *ctxsvr.Context) {
 			return
 		}
 	}
-	//if 50x error has been removed from errorMap
+	// if 50x error has been removed from errorMap
 	ctx.ResponseWriter.WriteHeader(atoi(errCode))
 	ctx.WriteString(errCode)
 }
 
-func executeError(err *errorInfo, ctx *ctxsvr.Context, code int) {
-	//make sure to log the error in the access log
+func executeError(err *errorInfo, ctx *context.Context, code int) {
+	// make sure to log the error in the access log
 	LogAccess(ctx, nil, code)
 
 	if err.errorType == errorTypeHandler {
@@ -465,16 +454,16 @@ func executeError(err *errorInfo, ctx *ctxsvr.Context, code int) {
 	}
 	if err.errorType == errorTypeController {
 		ctx.Output.SetStatus(code)
-		//Invoke the request handler
+		// Invoke the request handler
 		vc := reflect.New(err.controllerType)
 		execController, ok := vc.Interface().(ControllerInterface)
 		if !ok {
 			panic("controller is not ControllerInterface")
 		}
-		//call the controller init function
+		// call the controller init function
 		execController.Init(ctx, err.controllerType.Name(), err.method, vc.Interface())
 
-		//call prepare function
+		// call prepare function
 		execController.Prepare()
 
 		execController.URLMapping()
@@ -482,8 +471,8 @@ func executeError(err *errorInfo, ctx *ctxsvr.Context, code int) {
 		method := vc.MethodByName(err.method)
 		method.Call([]reflect.Value{})
 
-		//render template
-		if BasConfig.WebConfig.AutoRender {
+		// render template
+		if BConfig.WebConfig.AutoRender {
 			if err := execController.Render(); err != nil {
 				panic(err)
 			}

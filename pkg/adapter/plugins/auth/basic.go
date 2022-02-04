@@ -23,14 +23,14 @@ package auth
 // Package auth provides handlers to enable basic auth support.
 // Simple Usage:
 //	import(
-//		bhojpur "github.com/bhojpur/web/pkg/engine"
+//		websvr "github.com/bhojpur/web/pkg/engine"
 //		"github.com/bhojpur/web/pkg/plugins/auth"
 //	)
 //
 //	func main(){
 //		// authenticate every request
-//		bhojpur.InsertFilter("*", bhojpur.BeforeRouter,auth.Basic("username","secretpassword"))
-//		bhojpur.Run()
+//		websvr.InsertFilter("*", websvr.BeforeRouter, auth.Basic("username","secretpassword"))
+//		websvr.Run()
 //	}
 //
 // Advanced Usage:
@@ -39,14 +39,14 @@ package auth
 //		return username == "bhojpur" && password == "helloBhojpur"
 //	}
 //	authPlugin := auth.NewBasicAuthenticator(SecretAuth, "Authorization Required")
-//	bhojpur.InsertFilter("*", bhojpur.BeforeRouter,authPlugin)
+//	websvr.InsertFilter("*", websvr.BeforeRouter,authPlugin)
 
 import (
 	"net/http"
 
 	bhojpur "github.com/bhojpur/web/pkg/adapter"
 	"github.com/bhojpur/web/pkg/adapter/context"
-	beecontext "github.com/bhojpur/web/pkg/context"
+	ctxsvr "github.com/bhojpur/web/pkg/context"
 	"github.com/bhojpur/web/pkg/filter/auth"
 )
 
@@ -54,7 +54,7 @@ import (
 func Basic(username string, password string) bhojpur.FilterFunc {
 	return func(c *context.Context) {
 		f := auth.Basic(username, password)
-		f((*beecontext.Context)(c))
+		f((*ctxsvr.Context)(c))
 	}
 }
 
@@ -62,7 +62,7 @@ func Basic(username string, password string) bhojpur.FilterFunc {
 func NewBasicAuthenticator(secrets SecretProvider, realm string) bhojpur.FilterFunc {
 	f := auth.NewBasicAuthenticator(auth.SecretProvider(secrets), realm)
 	return func(c *context.Context) {
-		f((*beecontext.Context)(c))
+		f((*ctxsvr.Context)(c))
 	}
 }
 

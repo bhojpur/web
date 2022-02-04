@@ -22,7 +22,7 @@ package engine
 
 var indexTpl = `
 {{define "content"}}
-<h1>Bhojpur Web - Server Administrator Dashboard</h1>
+<h1>Bhojpur Web - Administrator Dashboard</h1>
 <p>
 For detail usage please check our document:
 </p>
@@ -30,7 +30,7 @@ For detail usage please check our document:
 <a target="_blank" href="https://docs.bhojpur.net/module/admin.md">Toolbox</a>
 </p>
 <p>
-<a target="_blank" href="https://docs.bhojpur.net/docs/advantage/monitor.md">Live Monitor</a>
+<a target="_blank" href="https://docs.bhojpur.net/advantage/monitor.md">Live Monitor</a>
 </p>
 {{.Content}}
 {{end}}`
@@ -79,10 +79,8 @@ var qpsTpl = `{{define "content"}}
 	{{end}}
 	</tr>
 	</thead>
-
 	<tbody>
 	{{range $i, $elem := .Content.Data}}
-
 	<tr>
 	    <td>{{index $elem 0}}</td>
 	    <td>{{index $elem 1}}</td>
@@ -94,7 +92,6 @@ var qpsTpl = `{{define "content"}}
 	</tr>
 	{{end}}
 	</tbody>
-
 </table>
 {{end}}`
 
@@ -110,12 +107,8 @@ var configTpl = `
 `
 
 var routerAndFilterTpl = `{{define "content"}}
-
-
 <h1>{{.Title}}</h1>
-
 {{range .Content.Methods}}
-
 <div class="panel panel-default">
 <div class="panel-heading lead success"><strong>{{.}}</strong></div>
 <div class="panel-body">
@@ -129,11 +122,9 @@ var routerAndFilterTpl = `{{define "content"}}
 	{{end}}
 	</tr>
 	</thead>
-
 	<tbody>
 	{{$slice := index $.Content.Data .}}
 	{{range $i, $elem := $slice}}
-
 	<tr>
 		{{range $elem}}
 			<td>
@@ -141,22 +132,16 @@ var routerAndFilterTpl = `{{define "content"}}
 			</td>
 		{{end}}
 	</tr>
-
 	{{end}}
 	</tbody>
-
 </table>
 </div>
 </div>
 {{end}}
-
-
 {{end}}`
 
 var tasksTpl = `{{define "content"}}
-
 <h1>{{.Title}}</h1>
-
 {{if .Message }}
 {{ $messageType := index .Message 0}}
 <p class="message
@@ -171,8 +156,6 @@ bg-warning
 {{index .Message 1}}
 </p>
 {{end}}
-
-
 <table class="table table-striped table-hover ">
 <thead>
 <tr>
@@ -183,7 +166,6 @@ bg-warning
 {{end}}
 </tr>
 </thead>
-
 <tbody>
 {{range $i, $slice := .Content.Data}}
 <tr>
@@ -199,12 +181,10 @@ bg-warning
 {{end}}
 </tbody>
 </table>
-
 {{end}}`
 
 var healthCheckTpl = `
 {{define "content"}}
-
 <h1>{{.Title}}</h1>
 <table class="table table-striped table-hover ">
 <thead>
@@ -238,7 +218,6 @@ var healthCheckTpl = `
 		</td>
 	</tr>
 {{end}}
-
 </tbody>
 </table>
 {{end}}`
@@ -252,16 +231,11 @@ var dashboardTpl = `
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <title>
-
-Bhojpur Web - Server Administrator Dashboard
-
+Welcome to Bhojpur Web - Administrator Dashboard
 </title>
-
 <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css" rel="stylesheet">
 <link href="//cdn.datatables.net/plug-ins/725b2a2115b/integration/bootstrap/3/dataTables.bootstrap.css" rel="stylesheet">
-
 <style type="text/css">
 ul.nav li.dropdown:hover > ul.dropdown-menu {
 	display: block;    
@@ -275,10 +249,8 @@ ul.nav li.dropdown:hover > ul.dropdown-menu {
 	padding: 15px;
 }
 </style>
-
 </head>
 <body>
-
 <header class="navbar navbar-default navbar-static-top bs-docs-nav" id="top" role="banner">
 <div class="container">
 <div class="navbar-header">
@@ -288,11 +260,9 @@ ul.nav li.dropdown:hover > ul.dropdown-menu {
 <span class="icon-bar"></span>
 <span class="icon-bar"></span>
 </button>
-
 <a href="/">
-<img id="logo" src="https://4.bp.blogspot.com/-W6sP7UczbCc/WqB48tWbv3I/AAAAAAAAFQE/bhwCc4aHo5wOI0KyhOzNRAJjB80JIsr0wCK4BGAYYCw/s130/logo.png"/>
+<img id="logo" src="https://static.bhojpur.net/image/logo.png"/>
 </a>
-
 </div>
 <nav class="collapse navbar-collapse bs-navbar-collapse" role="navigation">
 <ul class="nav navbar-nav">
@@ -302,11 +272,9 @@ Requests statistics
 </a>
 </li>
 <li>
-
 <li class="dropdown">
 <a href="#" class="dropdown-toggle disabled" data-toggle="dropdown">Performance profiling<span class="caret"></span></a>
 <ul class="dropdown-menu" role="menu">
-
 <li><a href="/prof?command=lookup goroutine">lookup goroutine</a></li>
 <li><a href="/prof?command=lookup heap">lookup heap</a></li>
 <li><a href="/prof?command=lookup threadcreate">lookup threadcreate</a></li>
@@ -314,20 +282,16 @@ Requests statistics
 <li><a href="/prof?command=get cpuprof">get cpuprof</a></li>
 <li><a href="/prof?command=get memprof">get memprof</a></li>
 <li><a href="/prof?command=gc summary">gc summary</a></li>
-
 </ul>
 </li>
-
 <li>
 <a href="/healthcheck">
 Healthcheck
 </a>
 </li>
-
 <li>
 <a href="/task" class="dropdown-toggle disabled" data-toggle="dropdown">Tasks</a>
 </li>
-
 <li class="dropdown">
 <a href="#" class="dropdown-toggle disabled" data-toggle="dropdown">Config Status<span class="caret"></span></a>
 <ul class="dropdown-menu" role="menu">
@@ -340,17 +304,14 @@ Healthcheck
 </nav>
 </div>
 </header>
-
 <div class="container">
 {{template "content" .}}
 </div>
-
 <script src="//code.jquery.com/jquery-1.11.1.min.js"></script>
 <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
 <script src="//cdn.datatables.net/1.10.2/js/jquery.dataTables.min.js"></script>
 <script src="//cdn.datatables.net/plug-ins/725b2a2115b/integration/bootstrap/3/dataTables.bootstrap.js
 "></script>
-
 <script type="text/javascript">
 $(document).ready(function() {
     $('.table').dataTable();

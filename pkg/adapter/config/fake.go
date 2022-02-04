@@ -27,5 +27,5 @@ import (
 // NewFakeConfig return a fake Configure
 func NewFakeConfig() Configure {
 	new := config.NewFakeConfig()
-	return &newToOldConfigerAdapter{delegate: new}
+	return &newToOldConfigureAdapter{delegate: new}
 }

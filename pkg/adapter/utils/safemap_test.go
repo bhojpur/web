@@ -22,24 +22,24 @@ package utils
 
 import "testing"
 
-var safeMap *BeeMap
+var safeMap *BhojpurMap
 
-func TestNewBeeMap(t *testing.T) {
-	safeMap = NewBeeMap()
+func TestNewBhojpurMap(t *testing.T) {
+	safeMap = NewBhojpurMap()
 	if safeMap == nil {
-		t.Fatal("expected to return non-nil BeeMap", "got", safeMap)
+		t.Fatal("expected to return non-nil BhojpurMap", "got", safeMap)
 	}
 }
 
 func TestSet(t *testing.T) {
-	safeMap = NewBeeMap()
+	safeMap = NewBhojpurMap()
 	if ok := safeMap.Set("bhojpur", 1); !ok {
 		t.Error("expected", true, "got", false)
 	}
 }
 
 func TestReSet(t *testing.T) {
-	safeMap := NewBeeMap()
+	safeMap := NewBhojpurMap()
 	if ok := safeMap.Set("bhojpur", 1); !ok {
 		t.Error("expected", true, "got", false)
 	}
@@ -74,7 +74,7 @@ func TestDelete(t *testing.T) {
 }
 
 func TestItems(t *testing.T) {
-	safeMap := NewBeeMap()
+	safeMap := NewBhojpurMap()
 	safeMap.Set("bhojpur", "hello")
 	for k, v := range safeMap.Items() {
 		key := k.(string)

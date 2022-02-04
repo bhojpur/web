@@ -25,13 +25,11 @@ import (
 	"regexp"
 	"strings"
 
-	ctxsvr "github.com/bhojpur/web/pkg/context"
-	webutl "github.com/bhojpur/web/pkg/core/utils"
+	"github.com/bhojpur/web/pkg/context"
+	"github.com/bhojpur/web/pkg/core/utils"
 )
 
-var (
-	allowSuffixExt = []string{".json", ".xml", ".html"}
-)
+var allowSuffixExt = []string{".json", ".xml", ".html"}
 
 // Tree has three elements: FixRouter/wildcard/leaves
 // fixRouter stores Fixed Router
@@ -76,7 +74,7 @@ func (t *Tree) addtree(segments []string, tree *Tree, wildcards []string, reg st
 	}
 	// Rule: /login/*/access match /login/2009/11/access
 	// if already has *, and when loop the access, should as a regexpStr
-	if !iswild && webutl.InSlice(":splat", wildcards) {
+	if !iswild && utils.InSlice(":splat", wildcards) {
 		iswild = true
 		regexpStr = seg
 	}
@@ -215,9 +213,9 @@ func (t *Tree) AddRouter(pattern string, runObject interface{}) {
 func (t *Tree) addseg(segments []string, route interface{}, wildcards []string, reg string) {
 	if len(segments) == 0 {
 		if reg != "" {
-			t.leaves = append(t.leaves, &leafInfo{runObject: route, wildcards: wildcards, regexps: regexp.MustCompile("^" + reg + "$")})
+			t.leaves = append([]*leafInfo{{runObject: route, wildcards: wildcards, regexps: regexp.MustCompile("^" + reg + "$")}}, t.leaves...)
 		} else {
-			t.leaves = append(t.leaves, &leafInfo{runObject: route, wildcards: wildcards})
+			t.leaves = append([]*leafInfo{{runObject: route, wildcards: wildcards}}, t.leaves...)
 		}
 	} else {
 		seg := segments[0]
@@ -229,7 +227,7 @@ func (t *Tree) addseg(segments []string, route interface{}, wildcards []string, 
 		}
 		// Rule: /login/*/access match /login/2009/11/access
 		// if already has *, and when loop the access, should as a regexpStr
-		if !iswild && webutl.InSlice(":splat", wildcards) {
+		if !iswild && utils.InSlice(":splat", wildcards) {
 			iswild = true
 			regexpStr = seg
 		}
@@ -289,23 +287,24 @@ func (t *Tree) addseg(segments []string, route interface{}, wildcards []string, 
 }
 
 // Match router to runObject & params
-func (t *Tree) Match(pattern string, ctx *ctxsvr.Context) (runObject interface{}) {
-	if len(pattern) == 0 || pattern[0] != '/' {
+func (t *Tree) Match(pattern string, ctx *context.Context) (runObject interface{}) {
+	if pattern == "" || pattern[0] != '/' {
 		return nil
 	}
 	w := make([]string, 0, 20)
 	return t.match(pattern[1:], pattern, w, ctx)
 }
 
-func (t *Tree) match(treePattern string, pattern string, wildcardValues []string, ctx *ctxsvr.Context) (runObject interface{}) {
+func (t *Tree) match(treePattern string, pattern string, wildcardValues []string, ctx *context.Context) (runObject interface{}) {
 	if len(pattern) > 0 {
-		i := 0
-		for ; i < len(pattern) && pattern[i] == '/'; i++ {
+		i, l := 0, len(pattern)
+		for i < l && pattern[i] == '/' {
+			i++
 		}
 		pattern = pattern[i:]
 	}
 	// Handle leaf nodes:
-	if len(pattern) == 0 {
+	if pattern == "" {
 		for _, l := range t.leaves {
 			if ok := l.match(treePattern, wildcardValues, ctx); ok {
 				return l.runObject
@@ -322,7 +321,8 @@ func (t *Tree) match(treePattern string, pattern string, wildcardValues []string
 	}
 	var seg string
 	i, l := 0, len(pattern)
-	for ; i < l && pattern[i] != '/'; i++ {
+	for i < l && pattern[i] != '/' {
+		i++
 	}
 	if i == 0 {
 		seg = pattern
@@ -333,7 +333,7 @@ func (t *Tree) match(treePattern string, pattern string, wildcardValues []string
 	}
 	for _, subTree := range t.fixrouters {
 		if subTree.prefix == seg {
-			if len(pattern) != 0 && pattern[0] == '/' {
+			if pattern != "" && pattern[0] == '/' {
 				treePattern = pattern[1:]
 			} else {
 				treePattern = pattern
@@ -347,8 +347,9 @@ func (t *Tree) match(treePattern string, pattern string, wildcardValues []string
 	if runObject == nil && len(t.fixrouters) > 0 {
 		// Filter the .json .xml .html extension
 		for _, str := range allowSuffixExt {
-			if strings.HasSuffix(seg, str) {
+			if strings.HasSuffix(seg, str) && strings.HasSuffix(treePattern, seg) {
 				for _, subTree := range t.fixrouters {
+					// strings.HasSuffix(treePattern, seg) avoid cases: /aaa.html/bbb could access /aaa/bbb
 					if subTree.prefix == seg[:len(seg)-len(str)] {
 						runObject = subTree.match(treePattern, pattern, wildcardValues, ctx)
 						if runObject != nil {
@@ -388,7 +389,7 @@ func (t *Tree) match(treePattern string, pattern string, wildcardValues []string
 }
 
 type leafInfo struct {
-	// names of wildcards that lead to this leaf. eg, ["id" "name"] for the wildcard ":id" and ":name"
+	// names of wildcards that lead to this leaf. e.g., ["id" "name"] for the wildcard ":id" and ":name"
 	wildcards []string
 
 	// if the leaf is regexp
@@ -397,7 +398,7 @@ type leafInfo struct {
 	runObject interface{}
 }
 
-func (leaf *leafInfo) match(treePattern string, wildcardValues []string, ctx *ctxsvr.Context) (ok bool) {
+func (leaf *leafInfo) match(treePattern string, wildcardValues []string, ctx *context.Context) (ok bool) {
 	// fmt.Println("Leaf:", wildcardValues, leaf.wildcards, leaf.regexps)
 	if leaf.regexps == nil {
 		if len(wildcardValues) == 0 && len(leaf.wildcards) == 0 { // static path

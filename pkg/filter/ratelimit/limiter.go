@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"github.com/bhojpur/web/pkg/context"
-	web "github.com/bhojpur/web/pkg/engine"
+	websvr "github.com/bhojpur/web/pkg/engine"
 )
 
 // limiterOption is constructor option
@@ -57,7 +57,7 @@ var defaultRejectionResponse = RejectionResponse{
 
 // NewLimiter return FilterFunc, the limiter enables rate limit
 // according to the configuration.
-func NewLimiter(opts ...limiterOption) web.FilterFunc {
+func NewLimiter(opts ...limiterOption) websvr.FilterFunc {
 	l := &limiter{
 		buckets:       make(map[string]bucket),
 		sessionKey:    defaultSessionKey,

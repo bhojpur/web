@@ -44,9 +44,9 @@ func (builder *FilterChainBuilder) FilterChain(next websvr.FilterFunc) websvr.Fi
 		Name:      "bhojpur",
 		Subsystem: "http_request",
 		ConstLabels: map[string]string{
-			"server":  websvr.BasConfig.ServerName,
-			"env":     websvr.BasConfig.RunMode,
-			"appname": websvr.BasConfig.AppName,
+			"server":  websvr.BConfig.ServerName,
+			"env":     websvr.BConfig.RunMode,
+			"appname": websvr.BConfig.AppName,
 		},
 		Help: "The statistics info for HTTP request",
 	}, []string{"pattern", "method", "status", "duration"})
@@ -69,7 +69,7 @@ func registerBuildInfo() {
 		Subsystem: "build_info",
 		Help:      "The building information",
 		ConstLabels: map[string]string{
-			"appname":        websvr.BasConfig.AppName,
+			"appname":        websvr.BConfig.AppName,
 			"build_version":  webapp.BuildVersion,
 			"build_revision": webapp.BuildGitRevision,
 			"build_status":   webapp.BuildStatus,

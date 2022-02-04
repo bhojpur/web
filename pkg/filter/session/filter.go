@@ -25,20 +25,20 @@ import (
 
 	logs "github.com/bhojpur/logger/pkg/engine"
 	session "github.com/bhojpur/session/pkg/engine"
-	webContext "github.com/bhojpur/web/pkg/context"
-	web "github.com/bhojpur/web/pkg/engine"
+	ctxsvr "github.com/bhojpur/web/pkg/context"
+	websvr "github.com/bhojpur/web/pkg/engine"
 )
 
-// Session maintain session for web service
-// Session new a session storage and store it into webContext.Context
+// Session maintain session for Bhojpur Web service
+// Session new a session storage and store it into ctxsvr.Context
 // experimental feature, we may change this in the future
-func Session(providerType session.ProviderType, options ...session.ManagerConfigOpt) web.FilterChain {
+func Session(providerType session.ProviderType, options ...session.ManagerConfigOpt) websvr.FilterChain {
 	sessionConfig := session.NewManagerConfig(options...)
 	sessionManager, _ := session.NewManager(string(providerType), sessionConfig)
 	go sessionManager.GC()
 
-	return func(next web.FilterFunc) web.FilterFunc {
-		return func(ctx *webContext.Context) {
+	return func(next websvr.FilterFunc) websvr.FilterFunc {
+		return func(ctx *ctxsvr.Context) {
 			if ctx.Input.CruSession != nil {
 				return
 			}

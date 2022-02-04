@@ -85,7 +85,6 @@ func (a *adminController) PrometheusMetrics() {
 // TaskStatus is a http.Handler with running task status (task name, status and the last execution).
 // it's in "/task" pattern in admin module.
 func (a *adminController) TaskStatus() {
-
 	rw, req := a.Ctx.ResponseWriter, a.Ctx.Request
 
 	data := make(map[interface{}]interface{})
@@ -97,11 +96,11 @@ func (a *adminController) TaskStatus() {
 		cmd := webadm.GetCommand("task", "run")
 		res := cmd.Execute(taskname)
 		if res.IsSuccess() {
-
-			data["Message"] = []string{"success",
+			data["Message"] = []string{
+				"success",
 				template.HTMLEscapeString(fmt.Sprintf("%s run success,Now the Status is <br>%s",
-					taskname, res.Content.(string)))}
-
+					taskname, res.Content.(string))),
+			}
 		} else {
 			data["Message"] = []string{"error", template.HTMLEscapeString(fmt.Sprintf("%s", res.Error))}
 		}
@@ -110,7 +109,7 @@ func (a *adminController) TaskStatus() {
 	// List Tasks
 	content := make(M)
 	resultList := webadm.GetCommand("task", "list").Execute().Content.([][]string)
-	var fields = []string{
+	fields := []string{
 		"Task Name",
 		"Task Spec",
 		"Task Status",
@@ -206,7 +205,7 @@ func (a *adminController) QpsIndex() {
 	writeTemplate(a.Ctx.ResponseWriter, data, qpsTpl, defaultScriptsTpl)
 }
 
-// ListConf is the http.Handler of displaying all Bhojpur.NET application configuration values as key/value pair.
+// ListConf is the http.Handler of displaying all Bhojpur Web configuration values as key/value pair.
 // it's registered with url pattern "/listconf" in admin module.
 func (a *adminController) ListConf() {
 	rw := a.Ctx.ResponseWriter
@@ -222,7 +221,7 @@ func (a *adminController) ListConf() {
 	switch command {
 	case "conf":
 		m := make(M)
-		list("BasConfig", BasConfig, m)
+		list("BConfig", BConfig, m)
 		m["appConfigPath"] = template.HTMLEscapeString(appConfigPath)
 		m["appConfigProvider"] = template.HTMLEscapeString(appConfigProvider)
 		tmpl := template.Must(template.New("dashboard").Parse(dashboardTpl))
@@ -234,7 +233,7 @@ func (a *adminController) ListConf() {
 		tmpl.Execute(rw, data)
 
 	case "router":
-		content := WebEngine.PrintTree()
+		content := BhojpurApp.PrintTree()
 		content["Fields"] = []string{
 			"Router Pattern",
 			"Methods",
@@ -244,19 +243,17 @@ func (a *adminController) ListConf() {
 		data["Title"] = "Routers"
 		writeTemplate(rw, data, routerAndFilterTpl, defaultScriptsTpl)
 	case "filter":
-		var (
-			content = M{
-				"Fields": []string{
-					"Router Pattern",
-					"Filter Function",
-				},
-			}
-		)
+		content := M{
+			"Fields": []string{
+				"Router Pattern",
+				"Filter Function",
+			},
+		}
 
-		filterTypeData := WebEngine.reportFilter()
+		filterTypeData := BhojpurApp.reportFilter()
 
 		filterTypes := make([]string, 0, len(filterTypeData))
-		for k, _ := range filterTypeData {
+		for k := range filterTypeData {
 			filterTypes = append(filterTypes, k)
 		}
 
@@ -293,11 +290,10 @@ func buildHealthCheckResponseList(healthCheckResults *[][]string) []map[string]i
 	}
 
 	return response
-
 }
 
 // PrintTree print all routers
 // Deprecated using BhojpurApp directly
 func PrintTree() M {
-	return WebEngine.PrintTree()
+	return BhojpurApp.PrintTree()
 }

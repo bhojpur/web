@@ -27,9 +27,9 @@ import (
 )
 
 const (
-	// DEV is for developer environment
+	// DEV is for develop
 	DEV = "dev"
-	// PROD is for production environment
+	// PROD is for production
 	PROD = "prod"
 )
 
@@ -39,33 +39,30 @@ type M map[string]interface{}
 // Hook function to run
 type hookfunc func() error
 
-var (
-	hooks = make([]hookfunc, 0) // hook function slice to store the hookfunc
-)
+var hooks = make([]hookfunc, 0) // hook function slice to store the hookfunc
 
 // AddAPPStartHook is used to register the hookfunc
-// The hookfuncs will run in bhojpur.Run()
+// The hookfuncs will run in websvr.Run()
 // such as initiating session , starting middleware , building template, starting admin control and so on.
 func AddAPPStartHook(hf ...hookfunc) {
 	hooks = append(hooks, hf...)
 }
 
-// Run Bhojpur.NET Platform web server engine.
-// WebEngine.Run() default run on HttpPort
-// WebEngine.Run("localhost")
-// WebEngine.Run(":8089")
-// WebEngine.Run("127.0.0.1:8089")
+// Run Bhojpur.NET Platform application.
+// websvr.Run() default run on HttpPort
+// websvr.Run("localhost")
+// websvr.Run(":8089")
+// websvr.Run("127.0.0.1:8089")
 func Run(params ...string) {
-
 	if len(params) > 0 && params[0] != "" {
-		WebEngine.Run(params[0])
+		BhojpurApp.Run(params[0])
 	}
-	WebEngine.Run("")
+	BhojpurApp.Run("")
 }
 
-// RunWithMiddleWares Run Bhojpur.NET Platform seb server engine with middlewares.
+// RunWithMiddleWares Run Bhojpur.NET Platform application with middlewares.
 func RunWithMiddleWares(addr string, mws ...MiddleWare) {
-	WebEngine.Run(addr, mws...)
+	BhojpurApp.Run(addr, mws...)
 }
 
 var initHttpOnce sync.Once
@@ -81,7 +78,7 @@ func initBeforeHTTPRun() {
 			registerTemplate,
 			registerAdmin,
 			registerGzip,
-			registerCommentRouter,
+			// registerCommentRouter,
 		)
 
 		for _, hk := range hooks {
@@ -92,18 +89,18 @@ func initBeforeHTTPRun() {
 	})
 }
 
-// TestWebEngineInit is for test package init
-func TestWebEngineInit(ap string) {
+// TestBhojpurInit is for test package init
+func TestBhojpurInit(ap string) {
 	path := filepath.Join(ap, "conf", "app.conf")
 	os.Chdir(ap)
-	InitWebEngineBeforeTest(path)
+	InitBhojpurBeforeTest(path)
 }
 
-// InitWebEngineBeforeTest is for test package init
-func InitWebEngineBeforeTest(appConfigPath string) {
+// InitBhojpurBeforeTest is for test package init
+func InitBhojpurBeforeTest(appConfigPath string) {
 	if err := LoadAppConfig(appConfigProvider, appConfigPath); err != nil {
 		panic(err)
 	}
-	BasConfig.RunMode = "test"
+	BConfig.RunMode = "test"
 	initBeforeHTTPRun()
 }

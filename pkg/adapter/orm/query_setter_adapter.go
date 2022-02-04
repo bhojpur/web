@@ -27,14 +27,14 @@ import (
 type baseQuerySetter struct {
 }
 
-func (b *baseQuerySetter) ForceIndex(indexes ...string) orm.QuerySeter {
+func (b *baseQuerySetter) ForceIndex(indexes ...string) orm.QuerySetter {
 	panic("you should not invoke this method.")
 }
 
-func (b *baseQuerySetter) UseIndex(indexes ...string) orm.QuerySeter {
+func (b *baseQuerySetter) UseIndex(indexes ...string) orm.QuerySetter {
 	panic("you should not invoke this method.")
 }
 
-func (b *baseQuerySetter) IgnoreIndex(indexes ...string) orm.QuerySeter {
+func (b *baseQuerySetter) IgnoreIndex(indexes ...string) orm.QuerySetter {
 	panic("you should not invoke this method.")
 }

@@ -36,7 +36,7 @@ import (
 
 	"golang.org/x/tools/go/packages"
 
-	logs "github.com/bhojpur/logger/pkg/engine"
+	logsvr "github.com/bhojpur/logger/pkg/engine"
 
 	"github.com/bhojpur/web/pkg/context/param"
 	"github.com/bhojpur/web/pkg/core/utils"
@@ -88,7 +88,7 @@ func parserPkg(pkgRealpath string) error {
 	commentFilename, _ = filepath.Rel(AppPath, pkgRealpath)
 	commentFilename = commentPrefix + rep.Replace(commentFilename) + ".go"
 	if !compareFile(pkgRealpath) {
-		logs.Info(pkgRealpath + " no changed")
+		logsvr.Info(pkgRealpath + " no changed")
 		return nil
 	}
 	genInfoList = make(map[string][]ControllerComments)
@@ -269,7 +269,7 @@ func parseComment(lines []*ast.Comment) (pcs []*parsedComment, err error) {
 		if strings.HasPrefix(t, "@Param") {
 			pv := getparams(strings.TrimSpace(strings.TrimLeft(t, "@Param")))
 			if len(pv) < 4 {
-				logs.Error("Invalid @Param format. Needs at least 4 parameters")
+				logsvr.Error("Invalid @Param format. Needs at least 4 parameters")
 			}
 			p := parsedParam{}
 			names := strings.SplitN(pv[0], "=>", 2)
@@ -296,7 +296,7 @@ func parseComment(lines []*ast.Comment) (pcs []*parsedComment, err error) {
 		if strings.HasPrefix(t, "@Import") {
 			iv := getparams(strings.TrimSpace(strings.TrimLeft(t, "@Import")))
 			if len(iv) == 0 || len(iv) > 2 {
-				logs.Error("Invalid @Import format. Only accepts 1 or 2 parameters")
+				logsvr.Error("Invalid @Import format. Only accepts 1 or 2 parameters")
 				continue
 			}
 
@@ -317,7 +317,7 @@ filterLoop:
 		if strings.HasPrefix(t, "@Filter") {
 			fv := getparams(strings.TrimSpace(strings.TrimLeft(t, "@Filter")))
 			if len(fv) < 3 {
-				logs.Error("Invalid @Filter format. Needs at least 3 parameters")
+				logsvr.Error("Invalid @Filter format. Needs at least 3 parameters")
 				continue filterLoop
 			}
 
@@ -327,7 +327,7 @@ filterLoop:
 			if pos, exists := routerHooks[posName]; exists {
 				p.pos = pos
 			} else {
-				logs.Error("Invalid @Filter pos: ", posName)
+				logsvr.Error("Invalid @Filter pos: ", posName)
 				continue filterLoop
 			}
 
@@ -340,7 +340,7 @@ filterLoop:
 				case "false":
 					p.params = append(p.params, false)
 				default:
-					logs.Error("Invalid @Filter param: ", fvParam)
+					logsvr.Error("Invalid @Filter param: ", fvParam)
 					continue filterLoop
 				}
 			}
@@ -378,7 +378,7 @@ filterLoop:
 	return
 }
 
-// direct copy from bee\g_docs.go
+// direct copy from bhojpur\g_docs.go
 // analysis params return []string
 // @Param	query		form	 string	true		"The email for login"
 // [query form string true "The email for login"]
@@ -416,7 +416,7 @@ func getparams(str string) []string {
 
 func genRouterCode(pkgRealpath string) {
 	os.Mkdir(getRouterDir(pkgRealpath), 0755)
-	logs.Info("generate router from comments")
+	logsvr.Info("generate router from comments")
 	var (
 		globalinfo   string
 		globalimport string

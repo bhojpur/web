@@ -25,11 +25,11 @@ import (
 	"reflect"
 
 	logsvr "github.com/bhojpur/logger/pkg/engine"
-	ctxutl "github.com/bhojpur/web/pkg/context"
+	ctxsvr "github.com/bhojpur/web/pkg/context"
 )
 
 // ConvertParams converts http method params to values that will be passed to the method controller as arguments
-func ConvertParams(methodParams []*MethodParam, methodType reflect.Type, ctx *ctxutl.Context) (result []reflect.Value) {
+func ConvertParams(methodParams []*MethodParam, methodType reflect.Type, ctx *ctxsvr.Context) (result []reflect.Value) {
 	result = make([]reflect.Value, 0, len(methodParams))
 	for i := 0; i < len(methodParams); i++ {
 		reflectValue := convertParam(methodParams[i], methodType.In(i), ctx)
@@ -38,7 +38,7 @@ func ConvertParams(methodParams []*MethodParam, methodType reflect.Type, ctx *ct
 	return
 }
 
-func convertParam(param *MethodParam, paramType reflect.Type, ctx *ctxutl.Context) (result reflect.Value) {
+func convertParam(param *MethodParam, paramType reflect.Type, ctx *ctxsvr.Context) (result reflect.Value) {
 	paramValue := getParamValue(param, ctx)
 	if paramValue == "" {
 		if param.required {
@@ -57,7 +57,7 @@ func convertParam(param *MethodParam, paramType reflect.Type, ctx *ctxutl.Contex
 	return reflectValue
 }
 
-func getParamValue(param *MethodParam, ctx *ctxutl.Context) string {
+func getParamValue(param *MethodParam, ctx *ctxsvr.Context) string {
 	switch param.in {
 	case body:
 		return string(ctx.Input.RequestBody)

@@ -32,8 +32,8 @@ import (
 	"sync"
 	"time"
 
-	logs "github.com/bhojpur/logger/pkg/engine"
-	beecontext "github.com/bhojpur/web/pkg/context"
+	logsvr "github.com/bhojpur/logger/pkg/engine"
+	ctxsvr "github.com/bhojpur/web/pkg/context"
 	"github.com/bhojpur/web/pkg/context/param"
 	"github.com/bhojpur/web/pkg/core/utils"
 )
@@ -84,13 +84,13 @@ var (
 
 // FilterHandler is an interface for
 type FilterHandler interface {
-	Filter(*beecontext.Context) bool
+	Filter(*ctxsvr.Context) bool
 }
 
 // default log filter static file will not show
 type logFilter struct{}
 
-func (l *logFilter) Filter(ctx *beecontext.Context) bool {
+func (l *logFilter) Filter(ctx *ctxsvr.Context) bool {
 	requestPath := path.Clean(ctx.Request.URL.Path)
 	if requestPath == "/favicon.ico" || requestPath == "/robots.txt" {
 		return true
@@ -187,7 +187,7 @@ func NewControllerRegisterWithCfg(cfg *Config) *ControllerRegister {
 		policies: make(map[string]*Tree),
 		pool: sync.Pool{
 			New: func() interface{} {
-				return beecontext.NewContext()
+				return ctxsvr.NewContext()
 			},
 		},
 		cfg:          cfg,
@@ -202,7 +202,7 @@ func (p *ControllerRegister) Init() {
 	for i := len(p.filterChains) - 1; i >= 0; i-- {
 		fc := p.filterChains[i]
 		root := p.chainRoot
-		filterFunc := fc.chain(func(ctx *beecontext.Context) {
+		filterFunc := fc.chain(func(ctx *ctxsvr.Context) {
 			var preFilterParams map[string]string
 			root.filter(ctx, p.getUrlPath(ctx), preFilterParams)
 		})
@@ -309,7 +309,7 @@ func (p *ControllerRegister) addWithMethodParams(pattern string, c ControllerInt
 
 	globalSessionOn := p.cfg.WebConfig.Session.SessionOn
 	if !globalSessionOn && route.sessionOn {
-		logs.Warn("global sessionOn is false, sessionOn of router [%s] can't be set to true", route.pattern)
+		logsvr.Warn("global sessionOn is false, sessionOn of router [%s] can't be set to true", route.pattern)
 		route.sessionOn = globalSessionOn
 	}
 
@@ -353,12 +353,12 @@ func (p *ControllerRegister) Include(cList ...ControllerInterface) {
 //  ctx := p.GetContext()
 //  ctx.Reset(w, q)
 //  defer p.GiveBackContext(ctx)
-func (p *ControllerRegister) GetContext() *beecontext.Context {
-	return p.pool.Get().(*beecontext.Context)
+func (p *ControllerRegister) GetContext() *ctxsvr.Context {
+	return p.pool.Get().(*ctxsvr.Context)
 }
 
 // GiveBackContext put the ctx into pool so that it could be reuse
-func (p *ControllerRegister) GiveBackContext(ctx *beecontext.Context) {
+func (p *ControllerRegister) GiveBackContext(ctx *ctxsvr.Context) {
 	p.pool.Put(ctx)
 }
 
@@ -495,7 +495,7 @@ func (p *ControllerRegister) AddRouterMethod(httpMethod, pattern string, f inter
 	p.addBhojpurTypeRouter(ct, methodName, httpMethod, pattern)
 }
 
-// addBhojpurTypeRouter add Bhojpur type router
+// addBhojpurTypeRouter add Bhojpur Web type router
 func (p *ControllerRegister) addBhojpurTypeRouter(ct reflect.Type, ctMethod, httpMethod, pattern string) {
 	route := p.createBhojpurRouter(ct, pattern)
 	methods := p.getHttpMethodMapMethod(httpMethod, ctMethod)
@@ -504,7 +504,7 @@ func (p *ControllerRegister) addBhojpurTypeRouter(ct reflect.Type, ctMethod, htt
 	p.addRouterForMethod(route)
 }
 
-// createBhojpurRouter create Bhojpur router base on reflect type and pattern
+// createBhojpurRouter create Bhojpur Web router base on reflect type and pattern
 func (p *ControllerRegister) createBhojpurRouter(ct reflect.Type, pattern string) *ControllerInfo {
 	route := &ControllerInfo{}
 	route.pattern = pattern
@@ -622,7 +622,7 @@ func getReflectTypeAndMethod(f interface{}) (controllerType reflect.Type, method
 }
 
 // HandleFunc define how to process the request
-type HandleFunc func(ctx *beecontext.Context)
+type HandleFunc func(ctx *ctxsvr.Context)
 
 // Get add get method
 // usage:
@@ -725,7 +725,7 @@ func (p *ControllerRegister) Handler(pattern string, h http.Handler, options ...
 }
 
 // AddAuto router to ControllerRegister.
-// example bhojpur.AddAuto(&MainController{}),
+// example websvr.AddAuto(&MainController{}),
 // MainController has method List and Page.
 // visit the url /main/list to execute List function
 // /main/page to execute Page function.
@@ -734,7 +734,7 @@ func (p *ControllerRegister) AddAuto(c ControllerInterface) {
 }
 
 // AddAutoPrefix Add auto router to ControllerRegister with prefix.
-// example bhojpur.AddAutoPrefix("/admin",&MainController{}),
+// example websvr.AddAutoPrefix("/admin",&MainController{}),
 // MainController has method List and Page.
 // visit the url /admin/main/list to execute List function
 // /admin/main/page to execute Page function.
@@ -817,11 +817,11 @@ func (p *ControllerRegister) insertFilterRouter(pos int, mr *FilterRouter) (err 
 func (p *ControllerRegister) URLFor(endpoint string, values ...interface{}) string {
 	paths := strings.Split(endpoint, ".")
 	if len(paths) <= 1 {
-		logs.Warn("urlfor endpoint must like path.controller.method")
+		logsvr.Warn("urlfor endpoint must like path.controller.method")
 		return ""
 	}
 	if len(values)%2 != 0 {
-		logs.Warn("urlfor params must key-value pair")
+		logsvr.Warn("urlfor params must key-value pair")
 		return ""
 	}
 	params := make(map[string]string)
@@ -957,7 +957,7 @@ func (p *ControllerRegister) getURL(t *Tree, url, controllerName, methodName str
 	return false, ""
 }
 
-func (p *ControllerRegister) execFilter(context *beecontext.Context, urlPath string, pos int) (started bool) {
+func (p *ControllerRegister) execFilter(context *ctxsvr.Context, urlPath string, pos int) (started bool) {
 	var preFilterParams map[string]string
 	for _, filterR := range p.filters[pos] {
 		b, done := filterR.filter(context, urlPath, preFilterParams)
@@ -979,7 +979,7 @@ func (p *ControllerRegister) ServeHTTP(rw http.ResponseWriter, r *http.Request) 
 	p.chainRoot.filter(ctx, p.getUrlPath(ctx), preFilterParams)
 }
 
-func (p *ControllerRegister) serveHttp(ctx *beecontext.Context) {
+func (p *ControllerRegister) serveHttp(ctx *ctxsvr.Context) {
 	var err error
 	startTime := time.Now()
 	r := ctx.Request
@@ -1035,7 +1035,7 @@ func (p *ControllerRegister) serveHttp(ctx *beecontext.Context) {
 		} else if p.cfg.CopyRequestBody {
 			// connection will close if the incoming data are larger (RFC 7231, 6.5.11)
 			if r.ContentLength > p.cfg.MaxMemory {
-				logs.Error(errors.New("payload too large"))
+				logsvr.Error(errors.New("payload too large"))
 				exception("413", ctx)
 				goto Admin
 			}
@@ -1048,7 +1048,7 @@ func (p *ControllerRegister) serveHttp(ctx *beecontext.Context) {
 
 		err = ctx.Input.ParseFormOrMultiForm(p.cfg.MaxMemory)
 		if err != nil {
-			logs.Error(err)
+			logsvr.Error(err)
 			if strings.Contains(err.Error(), `http: request body too large`) {
 				exception("413", ctx)
 			} else {
@@ -1067,7 +1067,7 @@ func (p *ControllerRegister) serveHttp(ctx *beecontext.Context) {
 	if currentSessionOn {
 		ctx.Input.CruSession, err = GlobalSessions.SessionStart(rw, r)
 		if err != nil {
-			logs.Error(err)
+			logsvr.Error(err)
 			exception("503", ctx)
 			goto Admin
 		}
@@ -1216,7 +1216,7 @@ func (p *ControllerRegister) serveHttp(ctx *beecontext.Context) {
 			if !ctx.ResponseWriter.Started && ctx.Output.Status == 0 {
 				if p.cfg.WebConfig.AutoRender {
 					if err := execController.Render(); err != nil {
-						logs.Error(err)
+						logsvr.Error(err)
 					}
 				}
 			}
@@ -1266,16 +1266,16 @@ Admin:
 		match := map[bool]string{true: "match", false: "nomatch"}
 		devInfo := fmt.Sprintf("|%15s|%s %3d %s|%13s|%8s|%s %-7s %s %-3s",
 			ctx.Input.IP(),
-			logs.ColorByStatus(statusCode), statusCode, logs.ResetColor(),
+			logsvr.ColorByStatus(statusCode), statusCode, logsvr.ResetColor(),
 			timeDur.String(),
 			match[findRouter],
-			logs.ColorByMethod(r.Method), r.Method, logs.ResetColor(),
+			logsvr.ColorByMethod(r.Method), r.Method, logsvr.ResetColor(),
 			r.URL.Path)
 		if routerInfo != nil {
 			devInfo += fmt.Sprintf("   r:%s", routerInfo.pattern)
 		}
 
-		logs.Debug(devInfo)
+		logsvr.Debug(devInfo)
 	}
 	// Call WriteHeader if status code has been set changed
 	if ctx.Output.Status != 0 {
@@ -1283,7 +1283,7 @@ Admin:
 	}
 }
 
-func (p *ControllerRegister) getUrlPath(ctx *beecontext.Context) string {
+func (p *ControllerRegister) getUrlPath(ctx *ctxsvr.Context) string {
 	urlPath := ctx.Request.URL.Path
 	if !p.cfg.RouterCaseSensitive {
 		urlPath = strings.ToLower(urlPath)
@@ -1291,7 +1291,7 @@ func (p *ControllerRegister) getUrlPath(ctx *beecontext.Context) string {
 	return urlPath
 }
 
-func (p *ControllerRegister) handleParamResponse(context *beecontext.Context, execController ControllerInterface, results []reflect.Value) {
+func (p *ControllerRegister) handleParamResponse(context *ctxsvr.Context, execController ControllerInterface, results []reflect.Value) {
 	// looping in reverse order for the case when both error and value are returned and error sets the response status code
 	for i := len(results) - 1; i >= 0; i-- {
 		result := results[i]
@@ -1306,7 +1306,7 @@ func (p *ControllerRegister) handleParamResponse(context *beecontext.Context, ex
 }
 
 // FindRouter Find Router info for URL
-func (p *ControllerRegister) FindRouter(context *beecontext.Context) (routerInfo *ControllerInfo, isFind bool) {
+func (p *ControllerRegister) FindRouter(context *ctxsvr.Context) (routerInfo *ControllerInfo, isFind bool) {
 	urlPath := context.Input.URL()
 	if !p.cfg.RouterCaseSensitive {
 		urlPath = strings.ToLower(urlPath)
@@ -1333,6 +1333,6 @@ func toURL(params map[string]string) string {
 }
 
 // LogAccess logging info HTTP Access
-func LogAccess(ctx *beecontext.Context, startTime *time.Time, statusCode int) {
+func LogAccess(ctx *ctxsvr.Context, startTime *time.Time, statusCode int) {
 	BhojpurApp.LogAccess(ctx, startTime, statusCode)
 }

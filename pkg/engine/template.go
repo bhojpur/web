@@ -33,40 +33,40 @@ import (
 	"strings"
 	"sync"
 
-	logs "github.com/bhojpur/logger/pkg/engine"
+	logsvr "github.com/bhojpur/logger/pkg/engine"
 	"github.com/bhojpur/web/pkg/core/utils"
 )
 
 var (
-	webTplFuncMap             = make(template.FuncMap)
-	webViewPathTemplateLocked = false
-	// webViewPathTemplates caching map and supported template file extensions per view
-	webViewPathTemplates = make(map[string]map[string]*template.Template)
-	templatesLock        sync.RWMutex
-	// webTemplateExt stores the template extension which will build
-	webTemplateExt = []string{"tpl", "html", "gohtml"}
-	// webTemplatePreprocessors stores associations of extension -> preprocessor handler
-	webTemplateEngines = map[string]templatePreProcessor{}
-	webTemplateFS      = defaultFSFunc
+	bhojpurTplFuncMap             = make(template.FuncMap)
+	bhojpurViewPathTemplateLocked = false
+	// bhojpurViewPathTemplates caching map and supported template file extensions per view
+	bhojpurViewPathTemplates = make(map[string]map[string]*template.Template)
+	templatesLock            sync.RWMutex
+	// bhojpurTemplateExt stores the template extension which will build
+	bhojpurTemplateExt = []string{"tpl", "html", "gohtml"}
+	// bhojpurTemplatePreprocessors stores associations of extension -> preprocessor handler
+	bhojpurTemplateEngines = map[string]templatePreProcessor{}
+	bhojpurTemplateFS      = defaultFSFunc
 )
 
 // ExecuteTemplate applies the template with name  to the specified data object,
 // writing the output to wr.
 // A template will be executed safely in parallel.
 func ExecuteTemplate(wr io.Writer, name string, data interface{}) error {
-	return ExecuteViewPathTemplate(wr, name, BasConfig.WebConfig.ViewsPath, data)
+	return ExecuteViewPathTemplate(wr, name, BConfig.WebConfig.ViewsPath, data)
 }
 
 // ExecuteViewPathTemplate applies the template with name and from specific viewPath to the specified data object,
 // writing the output to wr.
 // A template will be executed safely in parallel.
 func ExecuteViewPathTemplate(wr io.Writer, name string, viewPath string, data interface{}) error {
-	if BasConfig.RunMode == DEV {
+	if BConfig.RunMode == DEV {
 		templatesLock.RLock()
 		defer templatesLock.RUnlock()
 	}
-	if webTemplates, ok := webViewPathTemplates[viewPath]; ok {
-		if t, ok := webTemplates[name]; ok {
+	if bhojpurTemplates, ok := bhojpurViewPathTemplates[viewPath]; ok {
+		if t, ok := bhojpurTemplates[name]; ok {
 			var err error
 			if t.Lookup(name) != nil {
 				err = t.ExecuteTemplate(wr, name, data)
@@ -74,7 +74,7 @@ func ExecuteViewPathTemplate(wr io.Writer, name string, viewPath string, data in
 				err = t.Execute(wr, data)
 			}
 			if err != nil {
-				logs.Trace("template Execute err:", err)
+				logsvr.Trace("template Execute err:", err)
 			}
 			return err
 		}
@@ -84,37 +84,37 @@ func ExecuteViewPathTemplate(wr io.Writer, name string, viewPath string, data in
 }
 
 func init() {
-	webTplFuncMap["dateformat"] = DateFormat
-	webTplFuncMap["date"] = Date
-	webTplFuncMap["compare"] = Compare
-	webTplFuncMap["compare_not"] = CompareNot
-	webTplFuncMap["not_nil"] = NotNil
-	webTplFuncMap["not_null"] = NotNil
-	webTplFuncMap["substr"] = Substr
-	webTplFuncMap["html2str"] = HTML2str
-	webTplFuncMap["str2html"] = Str2html
-	webTplFuncMap["htmlquote"] = Htmlquote
-	webTplFuncMap["htmlunquote"] = Htmlunquote
-	webTplFuncMap["renderform"] = RenderForm
-	webTplFuncMap["assets_js"] = AssetsJs
-	webTplFuncMap["assets_css"] = AssetsCSS
-	webTplFuncMap["config"] = GetConfig
-	webTplFuncMap["map_get"] = MapGet
+	bhojpurTplFuncMap["dateformat"] = DateFormat
+	bhojpurTplFuncMap["date"] = Date
+	bhojpurTplFuncMap["compare"] = Compare
+	bhojpurTplFuncMap["compare_not"] = CompareNot
+	bhojpurTplFuncMap["not_nil"] = NotNil
+	bhojpurTplFuncMap["not_null"] = NotNil
+	bhojpurTplFuncMap["substr"] = Substr
+	bhojpurTplFuncMap["html2str"] = HTML2str
+	bhojpurTplFuncMap["str2html"] = Str2html
+	bhojpurTplFuncMap["htmlquote"] = Htmlquote
+	bhojpurTplFuncMap["htmlunquote"] = Htmlunquote
+	bhojpurTplFuncMap["renderform"] = RenderForm
+	bhojpurTplFuncMap["assets_js"] = AssetsJs
+	bhojpurTplFuncMap["assets_css"] = AssetsCSS
+	bhojpurTplFuncMap["config"] = GetConfig
+	bhojpurTplFuncMap["map_get"] = MapGet
 
 	// Comparisons
-	webTplFuncMap["eq"] = eq // ==
-	webTplFuncMap["ge"] = ge // >=
-	webTplFuncMap["gt"] = gt // >
-	webTplFuncMap["le"] = le // <=
-	webTplFuncMap["lt"] = lt // <
-	webTplFuncMap["ne"] = ne // !=
+	bhojpurTplFuncMap["eq"] = eq // ==
+	bhojpurTplFuncMap["ge"] = ge // >=
+	bhojpurTplFuncMap["gt"] = gt // >
+	bhojpurTplFuncMap["le"] = le // <=
+	bhojpurTplFuncMap["lt"] = lt // <
+	bhojpurTplFuncMap["ne"] = ne // !=
 
-	webTplFuncMap["urlfor"] = URLFor // build a URL to match a Controller and it's method
+	bhojpurTplFuncMap["urlfor"] = URLFor // build a URL to match a Controller and it's method
 }
 
 // AddFuncMap let user to register a func in the template.
 func AddFuncMap(key string, fn interface{}) error {
-	webTplFuncMap[key] = fn
+	bhojpurTplFuncMap[key] = fn
 	return nil
 }
 
@@ -148,9 +148,9 @@ func (tf *templateFile) visit(paths string, f os.FileInfo, err error) error {
 	return nil
 }
 
-// HasTemplateExt return this path contains supported template extension of Bhojpur.NET Platform application or not.
+// HasTemplateExt return this path contains supported template extension of Bhojpur.NET Platform or not.
 func HasTemplateExt(paths string) bool {
-	for _, v := range webTemplateExt {
+	for _, v := range bhojpurTemplateExt {
 		if strings.HasSuffix(paths, "."+v) {
 			return true
 		}
@@ -160,37 +160,37 @@ func HasTemplateExt(paths string) bool {
 
 // AddTemplateExt add new extension for template.
 func AddTemplateExt(ext string) {
-	for _, v := range webTemplateExt {
+	for _, v := range bhojpurTemplateExt {
 		if v == ext {
 			return
 		}
 	}
-	webTemplateExt = append(webTemplateExt, ext)
+	bhojpurTemplateExt = append(bhojpurTemplateExt, ext)
 }
 
 // AddViewPath adds a new path to the supported view paths.
-//Can later be used by setting a controller ViewPath to this folder
-//will panic if called after bhojpur.Run()
+// Can later be used by setting a controller ViewPath to this folder
+// will panic if called after websvr.Run()
 func AddViewPath(viewPath string) error {
-	if webViewPathTemplateLocked {
-		if _, exist := webViewPathTemplates[viewPath]; exist {
-			return nil //Ignore if viewpath already exists
+	if bhojpurViewPathTemplateLocked {
+		if _, exist := bhojpurViewPathTemplates[viewPath]; exist {
+			return nil // Ignore if viewpath already exists
 		}
-		panic("Can not add new view paths after bhojpur.Run()")
+		panic("Can not add new view paths after websvr.Run()")
 	}
-	webViewPathTemplates[viewPath] = make(map[string]*template.Template)
+	bhojpurViewPathTemplates[viewPath] = make(map[string]*template.Template)
 	return BuildTemplate(viewPath)
 }
 
 func lockViewPaths() {
-	webViewPathTemplateLocked = true
+	bhojpurViewPathTemplateLocked = true
 }
 
 // BuildTemplate will build all template files in a directory.
 // it makes Bhojpur.NET Platform can render any template file in view directory.
 func BuildTemplate(dir string, files ...string) error {
 	var err error
-	fs := webTemplateFS()
+	fs := bhojpurTemplateFS()
 	f, err := fs.Open(dir)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -200,7 +200,7 @@ func BuildTemplate(dir string, files ...string) error {
 	}
 	defer f.Close()
 
-	webTemplates, ok := webViewPathTemplates[dir]
+	bhojpurTemplates, ok := bhojpurViewPathTemplates[dir]
 	if !ok {
 		panic("Unknown view path: " + dir)
 	}
@@ -208,9 +208,7 @@ func BuildTemplate(dir string, files ...string) error {
 		root:  dir,
 		files: make(map[string][]string),
 	}
-	err = Walk(fs, dir, func(path string, f os.FileInfo, err error) error {
-		return self.visit(path, f, err)
-	})
+	err = Walk(fs, dir, self.visit)
 	if err != nil {
 		fmt.Printf("Walk() returned %v\n", err)
 		return err
@@ -224,17 +222,17 @@ func BuildTemplate(dir string, files ...string) error {
 				var t *template.Template
 				if len(ext) == 0 {
 					t, err = getTemplate(self.root, fs, file, v...)
-				} else if fn, ok := webTemplateEngines[ext[1:]]; ok {
-					t, err = fn(self.root, file, webTplFuncMap)
+				} else if fn, ok := bhojpurTemplateEngines[ext[1:]]; ok {
+					t, err = fn(self.root, file, bhojpurTplFuncMap)
 				} else {
 					t, err = getTemplate(self.root, fs, file, v...)
 				}
 				if err != nil {
-					logs.Error("parse template err:", file, err)
+					logsvr.Error("parse template err:", file, err)
 					templatesLock.Unlock()
 					return err
 				}
-				webTemplates[file] = t
+				bhojpurTemplates[file] = t
 				templatesLock.Unlock()
 			}
 		}
@@ -266,7 +264,7 @@ func getTplDeep(root string, fs http.FileSystem, file string, parent string, t *
 	if err != nil {
 		return nil, [][]string{}, err
 	}
-	reg := regexp.MustCompile(BasConfig.WebConfig.TemplateLeft + "[ ]*template[ ]+\"([^\"]+)\"")
+	reg := regexp.MustCompile(BConfig.WebConfig.TemplateLeft + "[ ]*template[ ]+\"([^\"]+)\"")
 	allSub := reg.FindAllStringSubmatch(string(data), -1)
 	for _, m := range allSub {
 		if len(m) == 2 {
@@ -287,7 +285,7 @@ func getTplDeep(root string, fs http.FileSystem, file string, parent string, t *
 }
 
 func getTemplate(root string, fs http.FileSystem, file string, others ...string) (t *template.Template, err error) {
-	t = template.New(file).Delims(BasConfig.WebConfig.TemplateLeft, BasConfig.WebConfig.TemplateRight).Funcs(webTplFuncMap)
+	t = template.New(file).Delims(BConfig.WebConfig.TemplateLeft, BConfig.WebConfig.TemplateRight).Funcs(bhojpurTplFuncMap)
 	var subMods [][]string
 	t, subMods, err = getTplDeep(root, fs, file, "", t)
 	if err != nil {
@@ -309,47 +307,47 @@ func _getTemplate(t0 *template.Template, root string, fs http.FileSystem, subMod
 			if tpl != nil {
 				continue
 			}
-			//first check filename
+			// first check filename
 			for _, otherFile := range others {
 				if otherFile == m[1] {
 					var subMods1 [][]string
 					t, subMods1, err = getTplDeep(root, fs, otherFile, "", t)
 					if err != nil {
-						logs.Trace("template parse file err:", err)
+						logsvr.Trace("template parse file err:", err)
 					} else if len(subMods1) > 0 {
 						t, err = _getTemplate(t, root, fs, subMods1, others...)
 					}
 					break
 				}
 			}
-			//second check define
+			// second check define
 			for _, otherFile := range others {
 				var data []byte
 				fileAbsPath := filepath.Join(root, otherFile)
 				f, err := fs.Open(fileAbsPath)
 				if err != nil {
 					f.Close()
-					logs.Trace("template file parse error, not success open file:", err)
+					logsvr.Trace("template file parse error, not success open file:", err)
 					continue
 				}
 				data, err = ioutil.ReadAll(f)
 				f.Close()
 				if err != nil {
-					logs.Trace("template file parse error, not success read file:", err)
+					logsvr.Trace("template file parse error, not success read file:", err)
 					continue
 				}
-				reg := regexp.MustCompile(BasConfig.WebConfig.TemplateLeft + "[ ]*define[ ]+\"([^\"]+)\"")
+				reg := regexp.MustCompile(BConfig.WebConfig.TemplateLeft + "[ ]*define[ ]+\"([^\"]+)\"")
 				allSub := reg.FindAllStringSubmatch(string(data), -1)
 				for _, sub := range allSub {
 					if len(sub) == 2 && sub[1] == m[1] {
 						var subMods1 [][]string
 						t, subMods1, err = getTplDeep(root, fs, otherFile, "", t)
 						if err != nil {
-							logs.Trace("template parse file err:", err)
+							logsvr.Trace("template parse file err:", err)
 						} else if len(subMods1) > 0 {
 							t, err = _getTemplate(t, root, fs, subMods1, others...)
 							if err != nil {
-								logs.Trace("template parse file err:", err)
+								logsvr.Trace("template parse file err:", err)
 							}
 						}
 						break
@@ -357,7 +355,6 @@ func _getTemplate(t0 *template.Template, root string, fs http.FileSystem, subMod
 				}
 			}
 		}
-
 	}
 	return
 }
@@ -370,17 +367,17 @@ func defaultFSFunc() http.FileSystem {
 
 // SetTemplateFSFunc set default filesystem function
 func SetTemplateFSFunc(fnt templateFSFunc) {
-	beeTemplateFS = fnt
+	bhojpurTemplateFS = fnt
 }
 
 // SetViewsPath sets view directory path in Bhojpur.NET Platform application.
 func SetViewsPath(path string) *HttpServer {
-	BasConfig.WebConfig.ViewsPath = path
+	BConfig.WebConfig.ViewsPath = path
 	return BhojpurApp
 }
 
 // SetStaticPath sets static directory path and proper url pattern in Bhojpur.NET Platform application.
-// if bhojpur.SetStaticPath("static","public"), visit /static/* to load static file in folder "public".
+// if websvr.SetStaticPath("static","public"), visit /static/* to load static file in folder "public".
 func SetStaticPath(url string, path string) *HttpServer {
 	if !strings.HasPrefix(url, "/") {
 		url = "/" + url
@@ -388,7 +385,7 @@ func SetStaticPath(url string, path string) *HttpServer {
 	if url != "/" {
 		url = strings.TrimRight(url, "/")
 	}
-	BasConfig.WebConfig.StaticDir[url] = path
+	BConfig.WebConfig.StaticDir[url] = path
 	return BhojpurApp
 }
 
@@ -400,13 +397,13 @@ func DelStaticPath(url string) *HttpServer {
 	if url != "/" {
 		url = strings.TrimRight(url, "/")
 	}
-	delete(BasConfig.WebConfig.StaticDir, url)
+	delete(BConfig.WebConfig.StaticDir, url)
 	return BhojpurApp
 }
 
 // AddTemplateEngine add a new templatePreProcessor which support extension
 func AddTemplateEngine(extension string, fn templatePreProcessor) *HttpServer {
 	AddTemplateExt(extension)
-	webTemplateEngines[extension] = fn
+	bhojpurTemplateEngines[extension] = fn
 	return BhojpurApp
 }

@@ -25,10 +25,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	ctxsvr "github.com/bhojpur/web/pkg/context"
+	"github.com/bhojpur/web/pkg/context"
 )
 
-var FilterUser = func(ctx *ctxsvr.Context) {
+var FilterUser = func(ctx *context.Context) {
 	ctx.Output.Body([]byte("i am " + ctx.Input.Param(":last") + ctx.Input.Param(":first")))
 }
 
@@ -44,12 +44,12 @@ func TestFilter(t *testing.T) {
 	}
 }
 
-var FilterAdminUser = func(ctx *ctxsvr.Context) {
+var FilterAdminUser = func(ctx *context.Context) {
 	ctx.Output.Body([]byte("i am admin"))
 }
 
 // Filter pattern /admin/:all
-// all url like    /admin/    /admin/rai    will all get filter
+// all url like    /admin/    /admin/pur    will all get filter
 
 func TestPatternTwo(t *testing.T) {
 	r, _ := http.NewRequest("GET", "/admin/", nil)

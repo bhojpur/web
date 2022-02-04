@@ -37,7 +37,8 @@ import (
 	"strings"
 	"time"
 
-	yaml "gopkg.in/yaml.v2"
+	"google.golang.org/protobuf/proto"
+	"gopkg.in/yaml.v2"
 )
 
 // BhojpurOutput does work for sending response header.
@@ -69,7 +70,7 @@ func (output *BhojpurOutput) Header(key, val string) {
 // Sends out response body directly.
 func (output *BhojpurOutput) Body(content []byte) error {
 	var encoding string
-	var buf = &bytes.Buffer{}
+	buf := &bytes.Buffer{}
 	if output.EnableGzip {
 		encoding = ParseEncoding(output.Context.Request)
 	}
@@ -123,13 +124,13 @@ func (output *BhojpurOutput) Cookie(name string, value string, others ...interfa
 	// can use nil skip set
 
 	// default "/"
+	tmpPath := "/"
 	if len(others) > 1 {
 		if v, ok := others[1].(string); ok && len(v) > 0 {
-			fmt.Fprintf(&b, "; Path=%s", sanitizeValue(v))
+			tmpPath = sanitizeValue(v)
 		}
-	} else {
-		fmt.Fprintf(&b, "; Path=%s", "/")
 	}
+	fmt.Fprintf(&b, "; Path=%s", tmpPath)
 
 	// default empty
 	if len(others) > 2 {
@@ -158,6 +159,13 @@ func (output *BhojpurOutput) Cookie(name string, value string, others ...interfa
 	if len(others) > 4 {
 		if v, ok := others[4].(bool); ok && v {
 			fmt.Fprintf(&b, "; HttpOnly")
+		}
+	}
+
+	// default empty
+	if len(others) > 5 {
+		if v, ok := others[5].(string); ok && len(v) > 0 {
+			fmt.Fprintf(&b, "; SameSite=%s", sanitizeValue(v))
 		}
 	}
 
@@ -216,6 +224,19 @@ func (output *BhojpurOutput) YAML(data interface{}) error {
 	var content []byte
 	var err error
 	content, err = yaml.Marshal(data)
+	if err != nil {
+		http.Error(output.Context.ResponseWriter, err.Error(), http.StatusInternalServerError)
+		return err
+	}
+	return output.Body(content)
+}
+
+// Proto writes protobuf to the response body.
+func (output *BhojpurOutput) Proto(data proto.Message) error {
+	output.Header("Content-Type", "application/x-protobuf; charset=utf-8")
+	var content []byte
+	var err error
+	content, err = proto.Marshal(data)
 	if err != nil {
 		http.Error(output.Context.ResponseWriter, err.Error(), http.StatusInternalServerError)
 		return err
@@ -294,6 +315,7 @@ func (output *BhojpurOutput) Download(file string, filename ...string) {
 	} else {
 		fName = filepath.Base(file)
 	}
+	// https://tools.ietf.org/html/rfc6266#section-4.3
 	fn := url.PathEscape(fName)
 	if fName == fn {
 		fn = "filename=" + fn

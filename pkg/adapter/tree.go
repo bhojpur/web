@@ -22,7 +22,7 @@ package adapter
 
 import (
 	"github.com/bhojpur/web/pkg/adapter/context"
-	beecontext "github.com/bhojpur/web/pkg/context"
+	ctxsvr "github.com/bhojpur/web/pkg/context"
 
 	web "github.com/bhojpur/web/pkg/engine"
 )
@@ -51,5 +51,5 @@ func (t *Tree) AddRouter(pattern string, runObject interface{}) {
 
 // Match router to runObject & params
 func (t *Tree) Match(pattern string, ctx *context.Context) (runObject interface{}) {
-	return (*web.Tree)(t).Match(pattern, (*beecontext.Context)(ctx))
+	return (*web.Tree)(t).Match(pattern, (*ctxsvr.Context)(ctx))
 }

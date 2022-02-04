@@ -5,8 +5,9 @@ go 1.17
 require (
 	github.com/bhojpur/image v0.0.1
 	github.com/bhojpur/logger v0.0.3
+	github.com/bhojpur/mail v0.0.1
 	github.com/bhojpur/policy v0.0.4
-	github.com/bhojpur/session v0.0.1
+	github.com/bhojpur/session v0.0.2
 	github.com/bhojpur/token v0.0.1
 	github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d
 	github.com/go-kit/kit v0.9.0
@@ -32,6 +33,7 @@ require (
 	google.golang.org/grpc v1.44.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	k8s.io/apimachinery v0.23.3
 	k8s.io/client-go v1.5.2
 )
@@ -93,7 +95,6 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220126215142-9970aeb2e350 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	k8s.io/api v0.23.3 // indirect
 	k8s.io/klog/v2 v2.40.1 // indirect
 	k8s.io/utils v0.0.0-20220127004650-9b3446523e65 // indirect

@@ -80,12 +80,12 @@ func Test_AllowRegexMatch(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	handler := websvr.NewControllerRegister()
 	handler.InsertFilter("*", websvr.BeforeRouter, Allow(&Options{
-		AllowOrigins: []string{"https://aaa.com", "https://*.foo.com"},
+		AllowOrigins: []string{"https://aaa.com", "https://*.bhojpur.net"},
 	}))
 	handler.Any("/foo", func(ctx *context.Context) {
 		ctx.Output.SetStatus(500)
 	})
-	origin := "https://bar.foo.com"
+	origin := "https://bar.bhojpur.net"
 	r, _ := http.NewRequest("PUT", "/foo", nil)
 	r.Header.Add("Origin", origin)
 	handler.ServeHTTP(recorder, r)
@@ -100,12 +100,12 @@ func Test_AllowRegexNoMatch(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	handler := websvr.NewControllerRegister()
 	handler.InsertFilter("*", websvr.BeforeRouter, Allow(&Options{
-		AllowOrigins: []string{"https://*.foo.com"},
+		AllowOrigins: []string{"https://*.bhojpur.net"},
 	}))
 	handler.Any("/foo", func(ctx *context.Context) {
 		ctx.Output.SetStatus(500)
 	})
-	origin := "https://ww.foo.com.evil.com"
+	origin := "https://ww.bhojpur.net.evil.com"
 	r, _ := http.NewRequest("PUT", "/foo", nil)
 	r.Header.Add("Origin", origin)
 	handler.ServeHTTP(recorder, r)
@@ -226,7 +226,7 @@ func Test_Preflight(t *testing.T) {
 func Benchmark_WithoutCORS(b *testing.B) {
 	recorder := httptest.NewRecorder()
 	handler := websvr.NewControllerRegister()
-	websvr.BasConfig.RunMode = websvr.PROD
+	websvr.BConfig.RunMode = websvr.PROD
 	handler.Any("/foo", func(ctx *context.Context) {
 		ctx.Output.SetStatus(500)
 	})
@@ -240,7 +240,7 @@ func Benchmark_WithoutCORS(b *testing.B) {
 func Benchmark_WithCORS(b *testing.B) {
 	recorder := httptest.NewRecorder()
 	handler := websvr.NewControllerRegister()
-	websvr.BasConfig.RunMode = websvr.PROD
+	websvr.BConfig.RunMode = websvr.PROD
 	handler.InsertFilter("*", websvr.BeforeRouter, Allow(&Options{
 		AllowAllOrigins:  true,
 		AllowCredentials: true,

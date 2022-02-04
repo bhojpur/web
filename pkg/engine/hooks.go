@@ -28,7 +28,7 @@ import (
 
 	logsvr "github.com/bhojpur/logger/pkg/engine"
 	session "github.com/bhojpur/session/pkg/engine"
-	ctxsvr "github.com/bhojpur/web/pkg/context"
+	"github.com/bhojpur/web/pkg/context"
 )
 
 // register MIME type with content type
@@ -58,35 +58,37 @@ func registerDefaultErrorHandler() error {
 	}
 	for e, h := range m {
 		if _, ok := ErrorMaps[e]; !ok {
-			logsvr.ErrorHandler(e, h)
+			ErrorHandler(e, h)
 		}
 	}
 	return nil
 }
 
 func registerSession() error {
-	if BasConfig.WebConfig.Session.SessionOn {
+	if BConfig.WebConfig.Session.SessionOn {
 		var err error
 		sessionConfig, err := AppConfig.String("sessionConfig")
 		conf := new(session.ManagerConfig)
 		if sessionConfig == "" || err != nil {
-			conf.CookieName = BasConfig.WebConfig.Session.SessionName
-			conf.EnableSetCookie = BasConfig.WebConfig.Session.SessionAutoSetCookie
-			conf.Gclifetime = BasConfig.WebConfig.Session.SessionGCMaxLifetime
-			conf.Secure = BasConfig.Listen.EnableHTTPS
-			conf.CookieLifeTime = BasConfig.WebConfig.Session.SessionCookieLifeTime
-			conf.ProviderConfig = filepath.ToSlash(BasConfig.WebConfig.Session.SessionProviderConfig)
-			conf.DisableHTTPOnly = BasConfig.WebConfig.Session.SessionDisableHTTPOnly
-			conf.Domain = BasConfig.WebConfig.Session.SessionDomain
-			conf.EnableSidInHTTPHeader = BasConfig.WebConfig.Session.SessionEnableSidInHTTPHeader
-			conf.SessionNameInHTTPHeader = BasConfig.WebConfig.Session.SessionNameInHTTPHeader
-			conf.EnableSidInURLQuery = BasConfig.WebConfig.Session.SessionEnableSidInURLQuery
+			conf.CookieName = BConfig.WebConfig.Session.SessionName
+			conf.EnableSetCookie = BConfig.WebConfig.Session.SessionAutoSetCookie
+			conf.Gclifetime = BConfig.WebConfig.Session.SessionGCMaxLifetime
+			conf.Secure = BConfig.Listen.EnableHTTPS
+			conf.CookieLifeTime = BConfig.WebConfig.Session.SessionCookieLifeTime
+			conf.ProviderConfig = filepath.ToSlash(BConfig.WebConfig.Session.SessionProviderConfig)
+			conf.DisableHTTPOnly = BConfig.WebConfig.Session.SessionDisableHTTPOnly
+			conf.Domain = BConfig.WebConfig.Session.SessionDomain
+			conf.EnableSidInHTTPHeader = BConfig.WebConfig.Session.SessionEnableSidInHTTPHeader
+			conf.SessionNameInHTTPHeader = BConfig.WebConfig.Session.SessionNameInHTTPHeader
+			conf.EnableSidInURLQuery = BConfig.WebConfig.Session.SessionEnableSidInURLQuery
+			conf.CookieSameSite = BConfig.WebConfig.Session.SessionCookieSameSite
+			conf.SessionIDPrefix = BConfig.WebConfig.Session.SessionIDPrefix
 		} else {
 			if err = json.Unmarshal([]byte(sessionConfig), conf); err != nil {
 				return err
 			}
 		}
-		if GlobalSessions, err = session.NewManager(BasConfig.WebConfig.Session.SessionProvider, conf); err != nil {
+		if GlobalSessions, err = session.NewManager(BConfig.WebConfig.Session.SessionProvider, conf); err != nil {
 			return err
 		}
 		go GlobalSessions.GC()
@@ -96,8 +98,8 @@ func registerSession() error {
 
 func registerTemplate() error {
 	defer lockViewPaths()
-	if err := ctxsvr.AddViewPath(BasConfig.WebConfig.ViewsPath); err != nil {
-		if BasConfig.RunMode == DEV {
+	if err := AddViewPath(BConfig.WebConfig.ViewsPath); err != nil {
+		if BConfig.RunMode == DEV {
 			logsvr.Warn(err)
 		}
 		return err
@@ -106,22 +108,12 @@ func registerTemplate() error {
 }
 
 func registerGzip() error {
-	if BasConfig.EnableGzip {
-		ctxsvr.InitGzip(
+	if BConfig.EnableGzip {
+		context.InitGzip(
 			AppConfig.DefaultInt("gzipMinLength", -1),
 			AppConfig.DefaultInt("gzipCompressLevel", -1),
 			AppConfig.DefaultStrings("includedMethods", []string{"GET"}),
 		)
 	}
-	return nil
-}
-
-func registerCommentRouter() error {
-	if BasConfig.RunMode == DEV {
-		if err := parserPkg(filepath.Join(WorkPath, BasConfig.WebConfig.CommentRouterPath)); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }

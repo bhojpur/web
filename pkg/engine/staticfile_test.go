@@ -32,8 +32,10 @@ import (
 	"testing"
 )
 
-var currentWorkDir, _ = os.Getwd()
-var licenseFile = filepath.Join(currentWorkDir, "LICENSE")
+var (
+	currentWorkDir, _ = os.Getwd()
+	licenseFile       = filepath.Join(currentWorkDir, "LICENSE")
+)
 
 func testOpenFile(encoding string, content []byte, t *testing.T) {
 	fi, _ := os.Stat(licenseFile)
@@ -47,6 +49,7 @@ func testOpenFile(encoding string, content []byte, t *testing.T) {
 
 	assetOpenFileAndContent(sch, reader, content, t)
 }
+
 func TestOpenStaticFile_1(t *testing.T) {
 	file, _ := os.Open(licenseFile)
 	content, _ := ioutil.ReadAll(file)
@@ -63,6 +66,7 @@ func TestOpenStaticFileGzip_1(t *testing.T) {
 
 	testOpenFile("gzip", content, t)
 }
+
 func TestOpenStaticFileDeflate_1(t *testing.T) {
 	file, _ := os.Open(licenseFile)
 	var zipBuf bytes.Buffer

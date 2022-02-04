@@ -102,114 +102,149 @@ func (n *Namespace) Filter(action string, filter ...FilterFunc) *Namespace {
 	return n
 }
 
-// Router same as bhojpur.Router
-// refer: https://godoc.org/github.com/bhojpur/web#Router
+// Router same as websvr.Router
 func (n *Namespace) Router(rootpath string, c ControllerInterface, mappingMethods ...string) *Namespace {
-	n.handlers.Add(rootpath, c, mappingMethods...)
+	n.handlers.Add(rootpath, c, WithRouterMethods(c, mappingMethods...))
 	return n
 }
 
-// AutoRouter same as bhojpur.AutoRouter
-// refer: https://godoc.org/github.com/bhojpur/web#AutoRouter
+// AutoRouter same as websvr.AutoRouter
 func (n *Namespace) AutoRouter(c ControllerInterface) *Namespace {
 	n.handlers.AddAuto(c)
 	return n
 }
 
-// AutoPrefix same as bhojpur.AutoPrefix
-// refer: https://godoc.org/github.com/bhojpur/web#AutoPrefix
+// AutoPrefix same as websvr.AutoPrefix
 func (n *Namespace) AutoPrefix(prefix string, c ControllerInterface) *Namespace {
 	n.handlers.AddAutoPrefix(prefix, c)
 	return n
 }
 
-// Get same as bhojpur.Get
-// refer: https://godoc.org/github.com/bhojpur/web#Get
-func (n *Namespace) Get(rootpath string, f FilterFunc) *Namespace {
+// Get same as websvr.Get
+func (n *Namespace) Get(rootpath string, f HandleFunc) *Namespace {
 	n.handlers.Get(rootpath, f)
 	return n
 }
 
-// Post same as bhojpur.Post
-// refer: https://godoc.org/github.com/bhojpur/web#Post
-func (n *Namespace) Post(rootpath string, f FilterFunc) *Namespace {
+// Post same as websvr.Post
+func (n *Namespace) Post(rootpath string, f HandleFunc) *Namespace {
 	n.handlers.Post(rootpath, f)
 	return n
 }
 
-// Delete same as bhojpur.Delete
-// refer: https://godoc.org/github.com/bhojpur/web#Delete
-func (n *Namespace) Delete(rootpath string, f FilterFunc) *Namespace {
+// Delete same as websvr.Delete
+func (n *Namespace) Delete(rootpath string, f HandleFunc) *Namespace {
 	n.handlers.Delete(rootpath, f)
 	return n
 }
 
-// Put same as bhojpur.Put
-// refer: https://godoc.org/github.com/bhojpur/web#Put
-func (n *Namespace) Put(rootpath string, f FilterFunc) *Namespace {
+// Put same as websvr.Put
+func (n *Namespace) Put(rootpath string, f HandleFunc) *Namespace {
 	n.handlers.Put(rootpath, f)
 	return n
 }
 
-// Head same as bhojpur.Head
-// refer: https://godoc.org/github.com/bhojpur/web#Head
-func (n *Namespace) Head(rootpath string, f FilterFunc) *Namespace {
+// Head same as websvr.Head
+func (n *Namespace) Head(rootpath string, f HandleFunc) *Namespace {
 	n.handlers.Head(rootpath, f)
 	return n
 }
 
-// Options same as bhojpur.Options
-// refer: https://godoc.org/github.com/bhojpur/web#Options
-func (n *Namespace) Options(rootpath string, f FilterFunc) *Namespace {
+// Options same as websvr.Options
+func (n *Namespace) Options(rootpath string, f HandleFunc) *Namespace {
 	n.handlers.Options(rootpath, f)
 	return n
 }
 
-// Patch same as bhojpur.Patch
-// refer: https://godoc.org/github.com/bhojpur/web#Patch
-func (n *Namespace) Patch(rootpath string, f FilterFunc) *Namespace {
+// Patch same as websvr.Patch
+func (n *Namespace) Patch(rootpath string, f HandleFunc) *Namespace {
 	n.handlers.Patch(rootpath, f)
 	return n
 }
 
-// Any same as bhojpur.Any
-// refer: https://godoc.org/github.com/bhojpur/web#Any
-func (n *Namespace) Any(rootpath string, f FilterFunc) *Namespace {
+// Any same as websvr.Any
+func (n *Namespace) Any(rootpath string, f HandleFunc) *Namespace {
 	n.handlers.Any(rootpath, f)
 	return n
 }
 
-// Handler same as bhojpur.Handler
-// refer: https://godoc.org/github.com/bhojpur/web#Handler
+// Handler same as websvr.Handler
 func (n *Namespace) Handler(rootpath string, h http.Handler) *Namespace {
 	n.handlers.Handler(rootpath, h)
 	return n
 }
 
 // Include add include class
-// refer: https://godoc.org/github.com/bhojpur/web#Include
 func (n *Namespace) Include(cList ...ControllerInterface) *Namespace {
 	n.handlers.Include(cList...)
 	return n
 }
 
+// CtrlGet same as websvr.CtrlGet
+func (n *Namespace) CtrlGet(rootpath string, f interface{}) *Namespace {
+	n.handlers.CtrlGet(rootpath, f)
+	return n
+}
+
+// CtrlPost same as websvr.CtrlPost
+func (n *Namespace) CtrlPost(rootpath string, f interface{}) *Namespace {
+	n.handlers.CtrlPost(rootpath, f)
+	return n
+}
+
+// CtrlDelete same as websvr.CtrlDelete
+func (n *Namespace) CtrlDelete(rootpath string, f interface{}) *Namespace {
+	n.handlers.CtrlDelete(rootpath, f)
+	return n
+}
+
+// CtrlPut same as websvr.CtrlPut
+func (n *Namespace) CtrlPut(rootpath string, f interface{}) *Namespace {
+	n.handlers.CtrlPut(rootpath, f)
+	return n
+}
+
+// CtrlHead same as websvr.CtrlHead
+func (n *Namespace) CtrlHead(rootpath string, f interface{}) *Namespace {
+	n.handlers.CtrlHead(rootpath, f)
+	return n
+}
+
+// CtrlOptions same as websvr.CtrlOptions
+func (n *Namespace) CtrlOptions(rootpath string, f interface{}) *Namespace {
+	n.handlers.CtrlOptions(rootpath, f)
+	return n
+}
+
+// CtrlPatch same as websvr.CtrlPatch
+func (n *Namespace) CtrlPatch(rootpath string, f interface{}) *Namespace {
+	n.handlers.CtrlPatch(rootpath, f)
+	return n
+}
+
+// Any same as websvr.CtrlAny
+func (n *Namespace) CtrlAny(rootpath string, f interface{}) *Namespace {
+	n.handlers.CtrlAny(rootpath, f)
+	return n
+}
+
 // Namespace add nest Namespace
 // usage:
-//ns := bhojpur.NewNamespace(“/v1”).
-//Namespace(
-//    bhojpur.NewNamespace("/shop").
+// ns := websvr.NewNamespace(“/v1”).
+// Namespace(
+//    websvr.NewNamespace("/shop").
 //        Get("/:id", func(ctx *context.Context) {
 //            ctx.Output.Body([]byte("shopinfo"))
 //    }),
-//    bhojpur.NewNamespace("/order").
+//    websvr.NewNamespace("/order").
 //        Get("/:id", func(ctx *context.Context) {
 //            ctx.Output.Body([]byte("orderinfo"))
 //    }),
-//    bhojpur.NewNamespace("/crm").
+//    websvr.NewNamespace("/crm").
 //        Get("/:id", func(ctx *context.Context) {
 //            ctx.Output.Body([]byte("crminfo"))
 //    }),
-//)
+// )
 func (n *Namespace) Namespace(ns ...*Namespace) *Namespace {
 	for _, ni := range ns {
 		for k, v := range ni.handlers.routers {
@@ -237,7 +272,7 @@ func (n *Namespace) Namespace(ns ...*Namespace) *Namespace {
 	return n
 }
 
-// AddNamespace register Namespace into bhojpur.Handler
+// AddNamespace register Namespace into websvr.Handler
 // support multi Namespace
 func AddNamespace(nl ...*Namespace) {
 	for _, n := range nl {
@@ -317,58 +352,114 @@ func NSRouter(rootpath string, c ControllerInterface, mappingMethods ...string) 
 }
 
 // NSGet call Namespace Get
-func NSGet(rootpath string, f FilterFunc) LinkNamespace {
+func NSGet(rootpath string, f HandleFunc) LinkNamespace {
 	return func(ns *Namespace) {
 		ns.Get(rootpath, f)
 	}
 }
 
 // NSPost call Namespace Post
-func NSPost(rootpath string, f FilterFunc) LinkNamespace {
+func NSPost(rootpath string, f HandleFunc) LinkNamespace {
 	return func(ns *Namespace) {
 		ns.Post(rootpath, f)
 	}
 }
 
 // NSHead call Namespace Head
-func NSHead(rootpath string, f FilterFunc) LinkNamespace {
+func NSHead(rootpath string, f HandleFunc) LinkNamespace {
 	return func(ns *Namespace) {
 		ns.Head(rootpath, f)
 	}
 }
 
 // NSPut call Namespace Put
-func NSPut(rootpath string, f FilterFunc) LinkNamespace {
+func NSPut(rootpath string, f HandleFunc) LinkNamespace {
 	return func(ns *Namespace) {
 		ns.Put(rootpath, f)
 	}
 }
 
 // NSDelete call Namespace Delete
-func NSDelete(rootpath string, f FilterFunc) LinkNamespace {
+func NSDelete(rootpath string, f HandleFunc) LinkNamespace {
 	return func(ns *Namespace) {
 		ns.Delete(rootpath, f)
 	}
 }
 
 // NSAny call Namespace Any
-func NSAny(rootpath string, f FilterFunc) LinkNamespace {
+func NSAny(rootpath string, f HandleFunc) LinkNamespace {
 	return func(ns *Namespace) {
 		ns.Any(rootpath, f)
 	}
 }
 
 // NSOptions call Namespace Options
-func NSOptions(rootpath string, f FilterFunc) LinkNamespace {
+func NSOptions(rootpath string, f HandleFunc) LinkNamespace {
 	return func(ns *Namespace) {
 		ns.Options(rootpath, f)
 	}
 }
 
 // NSPatch call Namespace Patch
-func NSPatch(rootpath string, f FilterFunc) LinkNamespace {
+func NSPatch(rootpath string, f HandleFunc) LinkNamespace {
 	return func(ns *Namespace) {
 		ns.Patch(rootpath, f)
+	}
+}
+
+// NSCtrlGet call Namespace CtrlGet
+func NSCtrlGet(rootpath string, f interface{}) LinkNamespace {
+	return func(ns *Namespace) {
+		ns.CtrlGet(rootpath, f)
+	}
+}
+
+// NSCtrlPost call Namespace CtrlPost
+func NSCtrlPost(rootpath string, f interface{}) LinkNamespace {
+	return func(ns *Namespace) {
+		ns.CtrlPost(rootpath, f)
+	}
+}
+
+// NSCtrlHead call Namespace CtrlHead
+func NSCtrlHead(rootpath string, f interface{}) LinkNamespace {
+	return func(ns *Namespace) {
+		ns.CtrlHead(rootpath, f)
+	}
+}
+
+// NSCtrlPut call Namespace CtrlPut
+func NSCtrlPut(rootpath string, f interface{}) LinkNamespace {
+	return func(ns *Namespace) {
+		ns.CtrlPut(rootpath, f)
+	}
+}
+
+// NSCtrlDelete call Namespace CtrlDelete
+func NSCtrlDelete(rootpath string, f interface{}) LinkNamespace {
+	return func(ns *Namespace) {
+		ns.CtrlDelete(rootpath, f)
+	}
+}
+
+// NSCtrlAny call Namespace CtrlAny
+func NSCtrlAny(rootpath string, f interface{}) LinkNamespace {
+	return func(ns *Namespace) {
+		ns.CtrlAny(rootpath, f)
+	}
+}
+
+// NSCtrlOptions call Namespace CtrlOptions
+func NSCtrlOptions(rootpath string, f interface{}) LinkNamespace {
+	return func(ns *Namespace) {
+		ns.CtrlOptions(rootpath, f)
+	}
+}
+
+// NSCtrlPatch call Namespace CtrlPatch
+func NSCtrlPatch(rootpath string, f interface{}) LinkNamespace {
+	return func(ns *Namespace) {
+		ns.CtrlPatch(rootpath, f)
 	}
 }
 

@@ -44,7 +44,7 @@ package cors
 
 import (
 	bhojpur "github.com/bhojpur/web/pkg/adapter"
-	beecontext "github.com/bhojpur/web/pkg/context"
+	ctxsvr "github.com/bhojpur/web/pkg/context"
 	"github.com/bhojpur/web/pkg/filter/cors"
 
 	"github.com/bhojpur/web/pkg/adapter/context"
@@ -73,6 +73,6 @@ func (o *Options) IsOriginAllowed(origin string) bool {
 func Allow(opts *Options) bhojpur.FilterFunc {
 	f := cors.Allow((*cors.Options)(opts))
 	return func(c *context.Context) {
-		f((*beecontext.Context)(c))
+		f((*ctxsvr.Context)(c))
 	}
 }

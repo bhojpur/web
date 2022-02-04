@@ -24,41 +24,41 @@ import (
 	"github.com/bhojpur/web/pkg/core/utils"
 )
 
-// BeeMap is a map with lock
-type BeeMap utils.BeeMap
+// BhojpurMap is a map with lock
+type BhojpurMap utils.BhojpurMap
 
-// NewBeeMap return new safemap
-func NewBeeMap() *BeeMap {
-	return (*BeeMap)(utils.NewBeeMap())
+// NewBhojpurMap return new safemap
+func NewBhojpurMap() *BhojpurMap {
+	return (*BhojpurMap)(utils.NewBhojpurMap())
 }
 
 // Get from maps return the k's value
-func (m *BeeMap) Get(k interface{}) interface{} {
-	return (*utils.BeeMap)(m).Get(k)
+func (m *BhojpurMap) Get(k interface{}) interface{} {
+	return (*utils.BhojpurMap)(m).Get(k)
 }
 
 // Set Maps the given key and value. Returns false
 // if the key is already in the map and changes nothing.
-func (m *BeeMap) Set(k interface{}, v interface{}) bool {
-	return (*utils.BeeMap)(m).Set(k, v)
+func (m *BhojpurMap) Set(k interface{}, v interface{}) bool {
+	return (*utils.BhojpurMap)(m).Set(k, v)
 }
 
 // Check Returns true if k is exist in the map.
-func (m *BeeMap) Check(k interface{}) bool {
-	return (*utils.BeeMap)(m).Check(k)
+func (m *BhojpurMap) Check(k interface{}) bool {
+	return (*utils.BhojpurMap)(m).Check(k)
 }
 
 // Delete the given key and value.
-func (m *BeeMap) Delete(k interface{}) {
-	(*utils.BeeMap)(m).Delete(k)
+func (m *BhojpurMap) Delete(k interface{}) {
+	(*utils.BhojpurMap)(m).Delete(k)
 }
 
 // Items returns all items in safemap.
-func (m *BeeMap) Items() map[interface{}]interface{} {
-	return (*utils.BeeMap)(m).Items()
+func (m *BhojpurMap) Items() map[interface{}]interface{} {
+	return (*utils.BhojpurMap)(m).Items()
 }
 
 // Count returns the number of items within the map.
-func (m *BeeMap) Count() int {
-	return (*utils.BeeMap)(m).Count()
+func (m *BhojpurMap) Count() int {
+	return (*utils.BhojpurMap)(m).Count()
 }

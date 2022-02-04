@@ -23,15 +23,15 @@ package authz
 // Package authz provides handlers to enable ACL, RBAC, ABAC authorization support.
 // Simple Usage:
 //	import(
-//		bhojpur "github.com/bhojpur/web/pkg/engine"
+//		websvr "github.com/bhojpur/web/pkg/engine"
 //		"github.com/bhojpur/web/pkg/plugins/authz"
 //		plcsvr "github.com/bhojpur/policy/pkg/engine"
 //	)
 //
 //	func main(){
 //		// mediate the access for every request
-//		bhojpur.InsertFilter("*", bhojpur.BeforeRouter, authz.NewAuthorizer(plcsvr.NewEnforcer("authz_model.conf", "authz_policy.csv")))
-//		bhojpur.Run()
+//		websvr.InsertFilter("*", websvr.BeforeRouter, authz.NewAuthorizer(plcsvr.NewEnforcer("authz_model.conf", "authz_policy.csv")))
+//		websvr.Run()
 //	}
 //
 //
@@ -42,8 +42,8 @@ package authz
 //		e.AddRoleForUser("alice", "admin")
 //		e.AddPolicy(...)
 //
-//		bhojpur.InsertFilter("*", bhojpur.BeforeRouter, authz.NewAuthorizer(e))
-//		bhojpur.Run()
+//		websvr.InsertFilter("*", websvr.BeforeRouter, authz.NewAuthorizer(e))
+//		websvr.Run()
 //	}
 
 import (
@@ -53,7 +53,7 @@ import (
 
 	bhojpur "github.com/bhojpur/web/pkg/adapter"
 	"github.com/bhojpur/web/pkg/adapter/context"
-	beecontext "github.com/bhojpur/web/pkg/context"
+	ctxsvr "github.com/bhojpur/web/pkg/context"
 	"github.com/bhojpur/web/pkg/filter/authz"
 )
 
@@ -62,7 +62,7 @@ import (
 func NewAuthorizer(e *plcsvr.Enforcer) bhojpur.FilterFunc {
 	f := authz.NewAuthorizer(e)
 	return func(context *context.Context) {
-		f((*beecontext.Context)(context))
+		f((*ctxsvr.Context)(context))
 	}
 }
 
@@ -77,7 +77,7 @@ func (a *BasicAuthorizer) GetUserName(r *http.Request) string {
 
 // CheckPermission checks the user/method/path combination from the request.
 // Returns true (permission granted) or false (permission forbidden)
-func (a *BasicAuthorizer) CheckPermission(r *http.Request) bool {
+func (a *BasicAuthorizer) CheckPermission(r *http.Request) (bool, error) {
 	return (*authz.BasicAuthorizer)(a).CheckPermission(r)
 }
 

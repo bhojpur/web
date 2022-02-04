@@ -46,7 +46,8 @@ func TestBasic(t *testing.T) {
 	handler := bhojpur.NewControllerRegister()
 
 	handler.InsertFilter("*", bhojpur.BeforeRouter, auth.Basic("alice", "123"))
-	handler.InsertFilter("*", bhojpur.BeforeRouter, NewAuthorizer(plcsvr.NewEnforcer("authz_model.conf", "authz_policy.csv")))
+	enforcer, _ := plcsvr.NewEnforcer("authz_model.conf", "authz_policy.csv")
+	handler.InsertFilter("*", bhojpur.BeforeRouter, NewAuthorizer(enforcer))
 
 	handler.Any("*", func(ctx *context.Context) {
 		ctx.Output.SetStatus(200)
@@ -62,7 +63,8 @@ func TestPathWildcard(t *testing.T) {
 	handler := bhojpur.NewControllerRegister()
 
 	handler.InsertFilter("*", bhojpur.BeforeRouter, auth.Basic("bob", "123"))
-	handler.InsertFilter("*", bhojpur.BeforeRouter, NewAuthorizer(plcsvr.NewEnforcer("authz_model.conf", "authz_policy.csv")))
+	enforcer, _ := plcsvr.NewEnforcer("authz_model.conf", "authz_policy.csv")
+	handler.InsertFilter("*", bhojpur.BeforeRouter, NewAuthorizer(enforcer))
 
 	handler.Any("*", func(ctx *context.Context) {
 		ctx.Output.SetStatus(200)
@@ -87,8 +89,8 @@ func TestRBAC(t *testing.T) {
 	handler := bhojpur.NewControllerRegister()
 
 	handler.InsertFilter("*", bhojpur.BeforeRouter, auth.Basic("cathy", "123"))
-	e := plcsvr.NewEnforcer("authz_model.conf", "authz_policy.csv")
-	handler.InsertFilter("*", bhojpur.BeforeRouter, NewAuthorizer(e))
+	enforcer, _ := plcsvr.NewEnforcer("authz_model.conf", "authz_policy.csv")
+	handler.InsertFilter("*", bhojpur.BeforeRouter, NewAuthorizer(enforcer))
 
 	handler.Any("*", func(ctx *context.Context) {
 		ctx.Output.SetStatus(200)
@@ -103,7 +105,7 @@ func TestRBAC(t *testing.T) {
 	testRequest(t, handler, "cathy", "/dataset2/item", "DELETE", 403)
 
 	// delete all roles on user cathy, so cathy cannot access any resources now.
-	e.DeleteRolesForUser("cathy")
+	enforcer.DeleteRolesForUser("cathy")
 
 	testRequest(t, handler, "cathy", "/dataset1/item", "GET", 403)
 	testRequest(t, handler, "cathy", "/dataset1/item", "POST", 403)

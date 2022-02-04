@@ -20,19 +20,20 @@ package authz
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// It provides handlers to enable ACL, RBAC, ABAC authorization support.
+// Package authz provides handlers to enable ACL, RBAC, ABAC authorization support.
 // Simple Usage:
 //	import(
-//		"github.com/bhojpur/web/pkg/engine"
-//		"github.com/bhojpur/web/pkg/filter/plugins/authz"
-//		plcsvr "github.com/bhopur/policy/pkg/engine"
+//		websvr "github.com/bhojpur/web/pkg/engine"
+//		"github.com/bhojpur/web/pkg/filter/authz"
+//		plcsvr "github.com/bhojpur/policy/pkg/engine"
 //	)
 //
 //	func main(){
 //		// mediate the access for every request
-//		bhojpur.InsertFilter("*", bhojpur.BeforeRouter, authz.NewAuthorizer(plcsvr.NewEnforcer("authz_model.conf", "authz_policy.csv")))
-//		bhojpur.Run()
+//		websvr.InsertFilter("*", websvr.BeforeRouter, authz.NewAuthorizer(plcsvr.NewEnforcer("authz_model.conf", "authz_policy.csv")))
+//		websvr.Run()
 //	}
+//
 //
 // Advanced Usage:
 //
@@ -41,8 +42,8 @@ package authz
 //		e.AddRoleForUser("alice", "admin")
 //		e.AddPolicy(...)
 //
-//		bhojpur.InsertFilter("*", bhojpur.BeforeRouter, authz.NewAuthorizer(e))
-//		bhojpur.Run()
+//		websvr.InsertFilter("*", websvr.BeforeRouter, authz.NewAuthorizer(e))
+//		websvr.Run()
 //	}
 
 import (
@@ -50,17 +51,18 @@ import (
 
 	plcsvr "github.com/bhojpur/policy/pkg/engine"
 
-	ctxsvr "github.com/bhojpur/web/pkg/context"
+	"github.com/bhojpur/web/pkg/context"
 	websvr "github.com/bhojpur/web/pkg/engine"
 )
 
 // NewAuthorizer returns the authorizer.
 // Use a Bhojpur Policy enforcer as input
 func NewAuthorizer(e *plcsvr.Enforcer) websvr.FilterFunc {
-	return func(ctx *ctxsvr.Context) {
+	return func(ctx *context.Context) {
 		a := &BasicAuthorizer{enforcer: e}
 
-		if !a.CheckPermission(ctx.Request) {
+		permitted, _ := a.CheckPermission(ctx.Request)
+		if !permitted {
 			a.RequirePermission(ctx.ResponseWriter)
 		}
 	}
@@ -80,7 +82,7 @@ func (a *BasicAuthorizer) GetUserName(r *http.Request) string {
 
 // CheckPermission checks the user/method/path combination from the request.
 // Returns true (permission granted) or false (permission forbidden)
-func (a *BasicAuthorizer) CheckPermission(r *http.Request) bool {
+func (a *BasicAuthorizer) CheckPermission(r *http.Request) (bool, error) {
 	user := a.GetUserName(r)
 	method := r.Method
 	path := r.URL.Path

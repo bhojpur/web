@@ -29,9 +29,9 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	logs "github.com/bhojpur/logger/pkg/engine"
-	bhojpur "github.com/bhojpur/web/pkg/engine"
-	web "github.com/bhojpur/web/pkg/engine"
+	logsvr "github.com/bhojpur/logger/pkg/engine"
+	webapp "github.com/bhojpur/web/pkg"
+	websvr "github.com/bhojpur/web/pkg/engine"
 )
 
 func PrometheusMiddleWare(next http.Handler) http.Handler {
@@ -39,9 +39,9 @@ func PrometheusMiddleWare(next http.Handler) http.Handler {
 		Name:      "bhojpur",
 		Subsystem: "http_request",
 		ConstLabels: map[string]string{
-			"server":  web.BConfig.ServerName,
-			"env":     web.BConfig.RunMode,
-			"appname": web.BConfig.AppName,
+			"server":  websvr.BConfig.ServerName,
+			"env":     websvr.BConfig.RunMode,
+			"appname": websvr.BConfig.AppName,
 		},
 		Help: "The statics info for http request",
 	}, []string{"pattern", "method", "status", "duration"})
@@ -64,14 +64,14 @@ func registerBuildInfo() {
 		Subsystem: "build_info",
 		Help:      "The building information",
 		ConstLabels: map[string]string{
-			"appname":        web.BConfig.AppName,
-			"build_version":  bhojpur.BuildVersion,
-			"build_revision": bhojpur.BuildGitRevision,
-			"build_status":   bhojpur.BuildStatus,
-			"build_tag":      bhojpur.BuildTag,
-			"build_time":     strings.Replace(bhojpur.BuildTime, "--", " ", 1),
-			"go_version":     bhojpur.GoVersion,
-			"git_branch":     bhojpur.GitBranch,
+			"appname":        websvr.BConfig.AppName,
+			"build_version":  webapp.BuildVersion,
+			"build_revision": webapp.BuildGitRevision,
+			"build_status":   webapp.BuildStatus,
+			"build_tag":      webapp.BuildTag,
+			"build_time":     strings.Replace(webapp.BuildTime, "--", " ", 1),
+			"go_version":     webapp.GoVersion,
+			"git_branch":     webapp.GitBranch,
 			"start_time":     time.Now().Format("2006-01-02 15:04:05"),
 		},
 	}, []string{})
@@ -81,7 +81,7 @@ func registerBuildInfo() {
 }
 
 func report(dur time.Duration, writer http.ResponseWriter, q *http.Request, vec *prometheus.SummaryVec) {
-	ctrl := web.BhojpurApp.Handlers
+	ctrl := websvr.BhojpurApp.Handlers
 	ctx := ctrl.GetContext()
 	ctx.Reset(writer, q)
 	defer ctrl.GiveBackContext(ctx)
@@ -99,7 +99,7 @@ func report(dur time.Duration, writer http.ResponseWriter, q *http.Request, vec 
 	if rt, found := ctrl.FindRouter(ctx); found {
 		ptn = rt.GetPattern()
 	} else {
-		logs.Warn("we can not find the router info for this request, so request will be recorded as UNKNOWN: " + q.URL.String())
+		logsvr.Warn("we can not find the router info for this request, so request will be recorded as UNKNOWN: " + q.URL.String())
 	}
 	ms := dur / time.Millisecond
 	vec.WithLabelValues(ptn, q.Method, strconv.Itoa(status), strconv.Itoa(int(ms))).Observe(float64(ms))

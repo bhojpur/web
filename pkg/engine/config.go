@@ -23,6 +23,7 @@ package engine
 import (
 	"crypto/tls"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -32,112 +33,421 @@ import (
 	logsvr "github.com/bhojpur/logger/pkg/engine"
 	session "github.com/bhojpur/session/pkg/engine"
 	webapp "github.com/bhojpur/web/pkg"
+	"github.com/bhojpur/web/pkg/context"
 	cfgsvr "github.com/bhojpur/web/pkg/core/config"
-
-	ctxsvr "github.com/bhojpur/web/pkg/context"
 	"github.com/bhojpur/web/pkg/core/utils"
 )
 
-// Config is the main struct for BasConfig
+// Config is the main struct for BConfig
 // TODO after supporting multiple servers, remove common config to somewhere else
 type Config struct {
-	AppName             string // Application name
-	RunMode             string // Running Mode: dev | prod
+	// AppName
+	// @Description Application's name. You'd better set it because we use it to do some logging and tracing
+	// @Default bhojpur
+	AppName string // Application name
+	// RunMode
+	// @Description it's the same as environment. In general, we have different run modes.
+	// For example, the most common case is using dev, test, prod three environments
+	// when you are developing the web application, you should set it as dev
+	// when you completed coding and want QA to test your code, you should deploy your application
+	// to test environment and the RunMode should be set as test
+	// when you completed all tests, you want to deploy it to prod, you should set it to prod
+	// You should never set RunMode="dev" when you deploy the application to prod
+	// because Bhojpur Web will do more things which need Go SDK and other tools when it found out the RunMode="dev"
+	// @Default dev
+	RunMode string // Running Mode: dev | prod
+
+	// RouterCaseSensitive
+	// @Description If it was true, it means that the router is case sensitive.
+	// For example, when you register a router with pattern "/hello",
+	// 1. If this is true, and the request URL is "/Hello", it won't match this pattern
+	// 2. If this is false and the request URL is "/Hello", it will match this pattern
+	// @Default true
 	RouterCaseSensitive bool
-	ServerName          string
-	RecoverPanic        bool
-	RecoverFunc         func(*ctxsvr.Context, *Config)
-	CopyRequestBody     bool
-	EnableGzip          bool
-	// MaxMemory and MaxUploadSize are used to limit the request body
+	// RecoverPanic
+	// @Description if it was true, Bhojpur Web will try to recover from panic when it serves your http request
+	// So you should notice that it doesn't mean that Bhojpur Web will recover all panic cases.
+	// @Default true
+	RecoverPanic bool
+	// CopyRequestBody
+	// @Description if it's true, Bhojpur Web will copy the request body. But if the request body's size > MaxMemory,
+	// Bhojpur Web will return 413 as http status
+	// If you are building RESTful API, please set it to true.
+	// And, if you want to read data from request Body multiple times, please set it to true
+	// In general, if you don't meet any performance issue, you could set it to true
+	// @Default false
+	CopyRequestBody bool
+	// EnableGzip
+	// @Description If it was true, Bhojpur Web will try to compress data by using zip algorithm.
+	// But there are two points:
+	// 1. Only static resources will be compressed
+	// 2. Only those static resource which has the extension specified by StaticExtensionsToGzip will be compressed
+	// @Default false
+	EnableGzip bool
+	// EnableErrorsShow
+	// @Description If it's true, Bhojpur Web will show error message to page
+	// it will work with ErrorMaps which allows you register some error handler
+	// You may want to set it to false when application was deploy to prod environment
+	// because you may not want to expose your internal error msg to your users
+	// it's a little bit unsafe
+	// @Default true
+	EnableErrorsShow bool
+	// EnableErrorsRender
+	// @Description If it's true, it will output the error msg as a page. It's similar to EnableErrorsShow
+	// And this configure item only work in dev run mode (see RunMode)
+	// @Default true
+	EnableErrorsRender bool
+	// ServerName
+	// @Description server name. For example, in large scale system,
+	// you may want to deploy your application to several machines, so that each of them has a server name
+	// we suggest you'd better set value because Bhojpur Web use this to output some DEBUG msg,
+	// or integrated with other tools such as tracing, metrics
+	// @Default
+	ServerName string
+
+	// RecoverFunc
+	// @Description when Bhojpur Web want to recover from panic, it will use this func as callback
+	// see RecoverPanic
+	// @Default defaultRecoverPanic
+	RecoverFunc func(*context.Context, *Config)
+	// @Description MaxMemory and MaxUploadSize are used to limit the request body
 	// if the request is not uploading file, MaxMemory is the max size of request body
 	// if the request is uploading file, MaxUploadSize is the max size of request body
-	MaxMemory          int64
-	MaxUploadSize      int64
-	EnableErrorsShow   bool
-	EnableErrorsRender bool
-	Listen             Listen
-	WebConfig          WebConfig
-	Log                LogConfig
+	// if CopyRequestBody is true, this value will be used as the threshold of request body
+	// see CopyRequestBody
+	// the default value is 1 << 26 (64MB)
+	// @Default 67108864
+	MaxMemory int64
+	// MaxUploadSize
+	// @Description  MaxMemory and MaxUploadSize are used to limit the request body
+	// if the request is not uploading file, MaxMemory is the max size of request body
+	// if the request is uploading file, MaxUploadSize is the max size of request body
+	// the default value is 1 << 30 (1GB)
+	// @Default 1073741824
+	MaxUploadSize int64
+	// Listen
+	// @Description the configuration about socket or http protocol
+	Listen Listen
+	// WebConfig
+	// @Description the configuration about Web
+	WebConfig WebConfig
+	// LogConfig
+	// @Description log configuration
+	Log LogConfig
 }
 
 // Listen holds for http and https related config
 type Listen struct {
-	Graceful          bool // Graceful means use graceful module to start the server
-	ServerTimeOut     int64
-	ListenTCP4        bool
-	EnableHTTP        bool
-	HTTPAddr          string
-	HTTPPort          int
-	AutoTLS           bool
-	Domains           []string
-	TLSCacheDir       string
-	EnableHTTPS       bool
+	// Graceful
+	// @Description means use graceful module to start the server
+	// @Default false
+	Graceful bool
+	// ListenTCP4
+	// @Description if it's true, means that Bhojpur Web only work for TCP4
+	// please check net.Listen function
+	// In general, you should not set it to true
+	// @Default false
+	ListenTCP4 bool
+	// EnableHTTP
+	// @Description if it's true, Bhojpur Web will accept HTTP request.
+	// But if you want to use HTTPS only, please set it to false
+	// see EnableHTTPS
+	// @Default true
+	EnableHTTP bool
+	// AutoTLS
+	// @Description If it's true, Bhojpur Web will use default value to initialize the TLS configure
+	// But those values could be override if you have custom value.
+	// see Domains, TLSCacheDir
+	// @Default false
+	AutoTLS bool
+	// EnableHTTPS
+	// @Description If it's true, Bhojpur Web will accept HTTPS request.
+	// Now, you'd better use HTTPS protocol on prod environment to get better security
+	// In prod, the best option is EnableHTTPS=true and EnableHTTP=false
+	// see EnableHTTP
+	// @Default false
+	EnableHTTPS bool
+	// EnableMutualHTTPS
+	// @Description if it's true, Bhojpur Web will handle requests on incoming mutual TLS connections
+	// see Server.ListenAndServeMutualTLS
+	// @Default false
 	EnableMutualHTTPS bool
-	HTTPSAddr         string
-	HTTPSPort         int
-	HTTPSCertFile     string
-	HTTPSKeyFile      string
-	TrustCaFile       string
-	EnableAdmin       bool
-	AdminAddr         string
-	AdminPort         int
-	EnableFcgi        bool
-	EnableStdIo       bool // EnableStdIo works with EnableFcgi Use FCGI via standard I/O
-	ClientAuth        int
+	// EnableAdmin
+	// @Description if it's true, Bhojpur Web will provide admin service.
+	// You can visit the admin service via browser.
+	// The default port is 8088
+	// see AdminPort
+	// @Default false
+	EnableAdmin bool
+	// EnableFcgi
+	// @Description
+	// @Default false
+	EnableFcgi bool
+	// EnableStdIo
+	// @Description EnableStdIo works with EnableFcgi Use FCGI via standard I/O
+	// @Default false
+	EnableStdIo bool
+	// ServerTimeOut
+	// @Description Bhojpur Web use this as ReadTimeout and WriteTimeout
+	// The unit is second.
+	// see http.Server.ReadTimeout, WriteTimeout
+	// @Default 0
+	ServerTimeOut int64
+	// HTTPAddr
+	// @Description Bhojpur Web listen to this address when the application start up.
+	// @Default ""
+	HTTPAddr string
+	// HTTPPort
+	// @Description Bhojpur Web listen to this port
+	// you'd better change this value when you deploy to prod environment
+	// @Default 8080
+	HTTPPort int
+	// Domains
+	// @Description Bhojpur Web use this to configure TLS. Those domains are "white list" domain
+	// @Default []
+	Domains []string
+	// TLSCacheDir
+	// @Description Bhojpur Web use this as cache dir to store TLS cert data
+	// @Default ""
+	TLSCacheDir string
+	// HTTPSAddr
+	// @Description Bhojpur Web will listen to this address to accept HTTPS request
+	// see EnableHTTPS
+	// @Default ""
+	HTTPSAddr string
+	// HTTPSPort
+	// @Description  Bhojpur Web will listen to this port to accept HTTPS request
+	// @Default 10443
+	HTTPSPort int
+	// HTTPSCertFile
+	// @Description Bhojpur Web read this file as cert file
+	// When you are using HTTPS protocol, please configure it
+	// see HTTPSKeyFile
+	// @Default ""
+	HTTPSCertFile string
+	// HTTPSKeyFile
+	// @Description Bhojpur Web read this file as key file
+	// When you are using HTTPS protocol, please configure it
+	// see HTTPSCertFile
+	// @Default ""
+	HTTPSKeyFile string
+	// TrustCaFile
+	// @Description Bhojpur Web read this file as CA file
+	// @Default ""
+	TrustCaFile string
+	// AdminAddr
+	// @Description Bhojpur Web will listen to this address to provide admin service
+	// In general, it should be the same with your application address, HTTPAddr or HTTPSAddr
+	// @Default ""
+	AdminAddr string
+	// AdminPort
+	// @Description  Bhojpur Web will listen to this port to provide admin service
+	// @Default 8088
+	AdminPort int
+	// @Description Bhojpur Web use this tls.ClientAuthType to initialize TLS connection
+	// The default value is tls.RequireAndVerifyClientCert
+	// @Default 4
+	ClientAuth int
 }
 
 // WebConfig holds web related config
 type WebConfig struct {
-	AutoRender             bool
-	EnableDocs             bool
-	FlashName              string
-	FlashSeparator         string
-	DirectoryIndex         bool
-	StaticDir              map[string]string
+	// AutoRender
+	// @Description If it's true, Bhojpur Web will render the page based on your template and data
+	// In general, keep it as true.
+	// But if you are building RESTFul API and you don't have any page,
+	// you can set it to false
+	// @Default true
+	AutoRender bool
+	// Deprecated: Bhojpur Web didn't use it anymore
+	EnableDocs bool
+	// EnableXSRF
+	// @Description If it's true, Bhojpur Web will help to provide XSRF support
+	// But you should notice that, now Bhojpur Web only work for HTTPS protocol with XSRF
+	// because it's not safe if using HTTP protocol
+	// And, the cookie storing XSRF token has two more flags HttpOnly and Secure
+	// It means that you must use HTTPS protocol and you can not read the token from JS script
+	// This is completed different from Bhojpur Web 1.x because we got many security reports
+	// And if you are in dev environment, you could set it to false
+	// @Default false
+	EnableXSRF bool
+	// DirectoryIndex
+	// @Description When Bhojpur Web serves static resources request, it will look up the file.
+	// If the file is directory, Bhojpur Web will try to find the index.html as the response
+	// But if the index.html is not exist or it's a directory,
+	// Bhojpur Web will return 403 response if DirectoryIndex is **false**
+	// @Default false
+	DirectoryIndex bool
+	// FlashName
+	// @Description the cookie's name when Bhojpur Web try to store the flash data into cookie
+	// @Default BHOJPUR_FLASH
+	FlashName string
+	// FlashSeparator
+	// @Description When Bhojpur Web read flash data from request, it uses this as the separator
+	// @Default BHOJPURFLASH
+	FlashSeparator string
+	// StaticDir
+	// @Description Bhojpur Web uses this as static resources' root directory.
+	// It means that Bhojpur Web will try to search static resource from this start point
+	// It's a map, the key is the path and the value is the directory
+	// For example, the default value is /static => static,
+	// which means that when Bhojpur Web got a request with path /static/xxx
+	// Bhojpur Web will try to find the resource from static directory
+	// @Default /static => static
+	StaticDir map[string]string
+	// StaticExtensionsToGzip
+	// @Description The static resources with those extension will be compressed if EnableGzip is true
+	// @Default [".css", ".js" ]
 	StaticExtensionsToGzip []string
-	StaticCacheFileSize    int
-	StaticCacheFileNum     int
-	TemplateLeft           string
-	TemplateRight          string
-	ViewsPath              string
-	CommentRouterPath      string
-	EnableXSRF             bool
-	XSRFKey                string
-	XSRFExpire             int
-	Session                SessionConfig
+	// StaticCacheFileSize
+	// @Description If the size of static resource < StaticCacheFileSize, Bhojpur Web will try to handle it by itself,
+	// it means that Bhojpur Web will compressed the file data (if enable) and cache this file.
+	// But if the file size > StaticCacheFileSize, Bhojpur Web just simply delegate the request to http.ServeFile
+	// the default value is 100KB.
+	// the max memory size of caching static files is StaticCacheFileSize * StaticCacheFileNum
+	// see StaticCacheFileNum
+	// @Default 102400
+	StaticCacheFileSize int
+	// StaticCacheFileNum
+	// @Description Bhojpur Web use it to control the memory usage of caching static resource file
+	// If the caching files > StaticCacheFileNum, Bhojpur Web uses LRU algorithm to remove caching file
+	// the max memory size of caching static files is StaticCacheFileSize * StaticCacheFileNum
+	// see StaticCacheFileSize
+	// @Default 1000
+	StaticCacheFileNum int
+	// TemplateLeft
+	// @Description Bhojpur Web use this to render page
+	// see TemplateRight
+	// @Default {{
+	TemplateLeft string
+	// TemplateRight
+	// @Description Bhojpur Web use this to render page
+	// see TemplateLeft
+	// @Default }}
+	TemplateRight string
+	// ViewsPath
+	// @Description The directory of Bhojpur Web application storing template
+	// @Default views
+	ViewsPath string
+	// CommentRouterPath
+	// @Description Bhojpur Web scans this directory and its sub directory to generate router
+	// Bhojpur Web only scans this directory when it's in dev environment
+	// @Default controllers
+	CommentRouterPath string
+	// XSRFKey
+	// @Description the name of cookie storing XSRF token
+	// see EnableXSRF
+	// @Default bhojpurxsrf
+	XSRFKey string
+	// XSRFExpire
+	// @Description the expiration time of XSRF token cookie
+	// second
+	// @Default 0
+	XSRFExpire int
+	// @Description session related config
+	Session SessionConfig
 }
 
 // SessionConfig holds session related config
 type SessionConfig struct {
-	SessionOn                    bool
-	SessionProvider              string
-	SessionName                  string
-	SessionGCMaxLifetime         int64
-	SessionProviderConfig        string
-	SessionCookieLifeTime        int
-	SessionAutoSetCookie         bool
-	SessionDomain                string
-	SessionDisableHTTPOnly       bool // used to allow for cross domain cookies/javascript cookies.
-	SessionEnableSidInHTTPHeader bool // enable store/get the sessionId into/from http headers
-	SessionNameInHTTPHeader      string
-	SessionEnableSidInURLQuery   bool // enable get the sessionId from Url Query params
+	// SessionOn
+	// @Description if it's true, Bhojpur Web will auto manage session
+	// @Default false
+	SessionOn bool
+	// SessionAutoSetCookie
+	// @Description if it's true, Bhojpur Web will put the session token into cookie too
+	// @Default true
+	SessionAutoSetCookie bool
+	// SessionDisableHTTPOnly
+	// @Description used to allow for cross domain cookies/javascript cookies
+	// In general, you should not set it to true unless you understand the risk
+	// @Default false
+	SessionDisableHTTPOnly bool
+	// SessionEnableSidInHTTPHeader
+	// @Description enable store/get the sessionId into/from http headers
+	// @Default false
+	SessionEnableSidInHTTPHeader bool
+	// SessionEnableSidInURLQuery
+	// @Description enable get the sessionId from Url Query params
+	// @Default false
+	SessionEnableSidInURLQuery bool
+	// SessionProvider
+	// @Description session provider's name.
+	// You should confirm that this provider has been register via session.Register method
+	// the default value is memory. This is not suitable for distributed system
+	// @Default memory
+	SessionProvider string
+	// SessionName
+	// @Description If SessionAutoSetCookie is true, we use this value as the cookie's name
+	// @Default bhojpursessionID
+	SessionName string
+	// SessionGCMaxLifetime
+	// @Description Bhojpur Web will GC session to clean useless session.
+	// unit: second
+	// @Default 3600
+	SessionGCMaxLifetime int64
+	// SessionProviderConfig
+	// @Description the config of session provider
+	// see SessionProvider
+	// you should read the document of session provider to learn how to set this value
+	// @Default ""
+	SessionProviderConfig string
+	// SessionCookieLifeTime
+	// @Description If SessionAutoSetCookie is true,
+	// we use this value as the expiration time and max age of the cookie
+	// unit second
+	// @Default 0
+	SessionCookieLifeTime int
+	// SessionDomain
+	// @Description If SessionAutoSetCookie is true, we use this value as the cookie's domain
+	// @Default ""
+	SessionDomain string
+	// SessionNameInHTTPHeader
+	// @Description if SessionEnableSidInHTTPHeader is true, this value will be used as the http header
+	// @Default Bhojpursessionid
+	SessionNameInHTTPHeader string
+	// SessionCookieSameSite
+	// @Description If SessionAutoSetCookie is true, we use this value as the cookie's same site policy
+	// the default value is http.SameSiteDefaultMode
+	// @Default 1
+	SessionCookieSameSite http.SameSite
+
+	// SessionIDPrefix
+	// @Description session id's prefix
+	// @Default ""
+	SessionIDPrefix string
 }
 
 // LogConfig holds Log related config
 type LogConfig struct {
-	AccessLogs       bool
-	EnableStaticLogs bool   // log static files requests default: false
-	AccessLogsFormat string // access log format: JSON_FORMAT, APACHE_FORMAT or empty string
-	FileLineNum      bool
-	Outputs          map[string]string // Store Adaptor : config
+	// AccessLogs
+	// @Description If it's true, Bhojpur Web will log the HTTP request info
+	// @Default false
+	AccessLogs bool
+	// EnableStaticLogs
+	// @Description log static files requests
+	// @Default false
+	EnableStaticLogs bool
+	// FileLineNum
+	// @Description if it's true, it will log the line number
+	// @Default true
+	FileLineNum bool
+	// AccessLogsFormat
+	// @Description access log format: JSON_FORMAT, APACHE_FORMAT or empty string
+	// @Default APACHE_FORMAT
+	AccessLogsFormat string
+	// Outputs
+	// @Description the destination of access log
+	// the key is log adapter and the value is adapter's configure
+	// @Default "console" => ""
+	Outputs map[string]string // Store Adaptor : config
 }
 
 var (
-	// BasConfig is the default config for Web Application
-	BasConfig *Config
+	// BConfig is the default config for Application
+	BConfig *Config
 	// AppConfig is the instance of Config, store the config information from file
-	AppConfig *webAppConfig
+	AppConfig *bhojpurAppConfig
 	// AppPath is the absolute path to the app
 	AppPath string
 	// GlobalSessions is the instance for the session manager
@@ -152,7 +462,7 @@ var (
 )
 
 func init() {
-	BasConfig = newBasConfig()
+	BConfig = newBConfig()
 	var err error
 	if AppPath, err = filepath.Abs(filepath.Dir(os.Args[0])); err != nil {
 		panic(err)
@@ -161,7 +471,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	var filename = "app.conf"
+	filename := "app.conf"
 	if os.Getenv("BHOJPUR_RUNMODE") != "" {
 		filename = os.Getenv("BHOJPUR_RUNMODE") + ".app.conf"
 	}
@@ -169,7 +479,7 @@ func init() {
 	if !utils.FileExists(appConfigPath) {
 		appConfigPath = filepath.Join(AppPath, "conf", filename)
 		if !utils.FileExists(appConfigPath) {
-			AppConfig = &webAppConfig{innerConfig: cfgsvr.NewFakeConfig()}
+			AppConfig = &bhojpurAppConfig{innerConfig: cfgsvr.NewFakeConfig()}
 			return
 		}
 	}
@@ -178,7 +488,7 @@ func init() {
 	}
 }
 
-func defaultRecoverPanic(ctx *ctxsvr.Context, cfg *Config) {
+func defaultRecoverPanic(ctx *context.Context, cfg *Config) {
 	if err := recover(); err != nil {
 		if err == ErrAbort {
 			return
@@ -203,18 +513,20 @@ func defaultRecoverPanic(ctx *ctxsvr.Context, cfg *Config) {
 			logsvr.Critical(fmt.Sprintf("%s:%d", file, line))
 			stack = stack + fmt.Sprintln(fmt.Sprintf("%s:%d", file, line))
 		}
-		if cfg.RunMode == DEV && cfg.EnableErrorsRender {
-			showErr(err, ctx, stack)
-		}
+
 		if ctx.Output.Status != 0 {
 			ctx.ResponseWriter.WriteHeader(ctx.Output.Status)
 		} else {
 			ctx.ResponseWriter.WriteHeader(500)
 		}
+
+		if cfg.RunMode == DEV && cfg.EnableErrorsRender {
+			showErr(err, ctx, stack)
+		}
 	}
 }
 
-func newBasConfig() *Config {
+func newBConfig() *Config {
 	res := &Config{
 		AppName:             "bhojpur",
 		RunMode:             PROD,
@@ -280,6 +592,7 @@ func newBasConfig() *Config {
 				SessionEnableSidInHTTPHeader: false, // enable store/get the sessionId into/from http headers
 				SessionNameInHTTPHeader:      "Bhojpursessionid",
 				SessionEnableSidInURLQuery:   false, // enable get the sessionId from Url Query params
+				SessionCookieSameSite:        http.SameSiteDefaultMode,
 			},
 		},
 		Log: LogConfig{
@@ -308,49 +621,48 @@ func parseConfig(appConfigPath string) (err error) {
 // For 1.x, it use assignSingleConfig to parse the file
 // but for 2.x, we use Unmarshaler method
 func assignConfig(ac cfgsvr.Configure) error {
-
 	parseConfigForV1(ac)
 
-	err := ac.Unmarshaler("", BasConfig)
+	err := ac.Unmarshaler("", BConfig)
 	if err != nil {
-		_, _ = fmt.Fprintln(os.Stderr, fmt.Sprintf("Unmarshaler config file to BasConfig failed. "+
+		_, _ = fmt.Fprintln(os.Stderr, fmt.Sprintf("Unmarshaler config file to BConfig failed. "+
 			"And if you are working on v1.x config file, please ignore this, err: %s", err))
 		return err
 	}
 
 	// init log
 	logsvr.Reset()
-	for adaptor, cfg := range BasConfig.Log.Outputs {
+	for adaptor, cfg := range BConfig.Log.Outputs {
 		err := logsvr.SetLogger(adaptor, cfg)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, fmt.Sprintf("%s with the config %q got err:%s", adaptor, cfg, err.Error()))
 			return err
 		}
 	}
-	logsvr.SetLogFuncCall(BasConfig.Log.FileLineNum)
+	logsvr.SetLogFuncCall(BConfig.Log.FileLineNum)
 	return nil
 }
 
 func parseConfigForV1(ac cfgsvr.Configure) {
-	for _, i := range []interface{}{BasConfig, &BasConfig.Listen, &BasConfig.WebConfig, &BasConfig.Log, &BasConfig.WebConfig.Session} {
+	for _, i := range []interface{}{BConfig, &BConfig.Listen, &BConfig.WebConfig, &BConfig.Log, &BConfig.WebConfig.Session} {
 		assignSingleConfig(i, ac)
 	}
 
 	// set the run mode first
 	if envRunMode := os.Getenv("BHOJPUR_RUNMODE"); envRunMode != "" {
-		BasConfig.RunMode = envRunMode
+		BConfig.RunMode = envRunMode
 	} else if runMode, err := ac.String("RunMode"); runMode != "" && err == nil {
-		BasConfig.RunMode = runMode
+		BConfig.RunMode = runMode
 	}
 
 	if sd, err := ac.String("StaticDir"); sd != "" && err == nil {
-		BasConfig.WebConfig.StaticDir = map[string]string{}
+		BConfig.WebConfig.StaticDir = map[string]string{}
 		sds := strings.Fields(sd)
 		for _, v := range sds {
 			if url2fsmap := strings.SplitN(v, ":", 2); len(url2fsmap) == 2 {
-				BasConfig.WebConfig.StaticDir["/"+strings.Trim(url2fsmap[0], "/")] = url2fsmap[1]
+				BConfig.WebConfig.StaticDir["/"+strings.Trim(url2fsmap[0], "/")] = url2fsmap[1]
 			} else {
-				BasConfig.WebConfig.StaticDir["/"+strings.Trim(url2fsmap[0], "/")] = url2fsmap[0]
+				BConfig.WebConfig.StaticDir["/"+strings.Trim(url2fsmap[0], "/")] = url2fsmap[0]
 			}
 		}
 	}
@@ -369,27 +681,27 @@ func parseConfigForV1(ac cfgsvr.Configure) {
 			fileExts = append(fileExts, ext)
 		}
 		if len(fileExts) > 0 {
-			BasConfig.WebConfig.StaticExtensionsToGzip = fileExts
+			BConfig.WebConfig.StaticExtensionsToGzip = fileExts
 		}
 	}
 
 	if sfs, err := ac.Int("StaticCacheFileSize"); err == nil {
-		BasConfig.WebConfig.StaticCacheFileSize = sfs
+		BConfig.WebConfig.StaticCacheFileSize = sfs
 	}
 
 	if sfn, err := ac.Int("StaticCacheFileNum"); err == nil {
-		BasConfig.WebConfig.StaticCacheFileNum = sfn
+		BConfig.WebConfig.StaticCacheFileNum = sfn
 	}
 
 	if lo, err := ac.String("LogOutputs"); lo != "" && err == nil {
 		// if lo is not nil or empty
 		// means user has set his own LogOutputs
-		// clear the default setting to BasConfig.Log.Outputs
-		BasConfig.Log.Outputs = make(map[string]string)
+		// clear the default setting to BConfig.Log.Outputs
+		BConfig.Log.Outputs = make(map[string]string)
 		los := strings.Split(lo, ";")
 		for _, v := range los {
 			if logType2Config := strings.SplitN(v, ",", 2); len(logType2Config) == 2 {
-				BasConfig.Log.Outputs[logType2Config[0]] = logType2Config[1]
+				BConfig.Log.Outputs[logType2Config[0]] = logType2Config[1]
 			} else {
 				continue
 			}
@@ -426,7 +738,6 @@ func assignSingleConfig(p interface{}, ac cfgsvr.Configure) {
 			// do nothing here
 		}
 	}
-
 }
 
 // LoadAppConfig allow developer to apply a config file
@@ -446,122 +757,122 @@ func LoadAppConfig(adapterName, configPath string) error {
 	return parseConfig(appConfigPath)
 }
 
-type webAppConfig struct {
+type bhojpurAppConfig struct {
 	cfgsvr.BaseConfigure
 	innerConfig cfgsvr.Configure
 }
 
-func newAppConfig(appConfigProvider, appConfigPath string) (*webAppConfig, error) {
+func newAppConfig(appConfigProvider, appConfigPath string) (*bhojpurAppConfig, error) {
 	ac, err := cfgsvr.NewConfig(appConfigProvider, appConfigPath)
 	if err != nil {
 		return nil, err
 	}
-	return &webAppConfig{innerConfig: ac}, nil
+	return &bhojpurAppConfig{innerConfig: ac}, nil
 }
 
-func (b *webAppConfig) Unmarshaler(prefix string, obj interface{}, opt ...cfgsvr.DecodeOption) error {
+func (b *bhojpurAppConfig) Unmarshaler(prefix string, obj interface{}, opt ...cfgsvr.DecodeOption) error {
 	return b.innerConfig.Unmarshaler(prefix, obj, opt...)
 }
 
-func (b *webAppConfig) Set(key, val string) error {
-	if err := b.innerConfig.Set(BasConfig.RunMode+"::"+key, val); err != nil {
+func (b *bhojpurAppConfig) Set(key, val string) error {
+	if err := b.innerConfig.Set(BConfig.RunMode+"::"+key, val); err != nil {
 		return b.innerConfig.Set(key, val)
 	}
 	return nil
 }
 
-func (b *webAppConfig) String(key string) (string, error) {
-	if v, err := b.innerConfig.String(BasConfig.RunMode + "::" + key); v != "" && err == nil {
+func (b *bhojpurAppConfig) String(key string) (string, error) {
+	if v, err := b.innerConfig.String(BConfig.RunMode + "::" + key); v != "" && err == nil {
 		return v, nil
 	}
 	return b.innerConfig.String(key)
 }
 
-func (b *webAppConfig) Strings(key string) ([]string, error) {
-	if v, err := b.innerConfig.Strings(BasConfig.RunMode + "::" + key); len(v) > 0 && err == nil {
+func (b *bhojpurAppConfig) Strings(key string) ([]string, error) {
+	if v, err := b.innerConfig.Strings(BConfig.RunMode + "::" + key); len(v) > 0 && err == nil {
 		return v, nil
 	}
 	return b.innerConfig.Strings(key)
 }
 
-func (b *webAppConfig) Int(key string) (int, error) {
-	if v, err := b.innerConfig.Int(BasConfig.RunMode + "::" + key); err == nil {
+func (b *bhojpurAppConfig) Int(key string) (int, error) {
+	if v, err := b.innerConfig.Int(BConfig.RunMode + "::" + key); err == nil {
 		return v, nil
 	}
 	return b.innerConfig.Int(key)
 }
 
-func (b *webAppConfig) Int64(key string) (int64, error) {
-	if v, err := b.innerConfig.Int64(BasConfig.RunMode + "::" + key); err == nil {
+func (b *bhojpurAppConfig) Int64(key string) (int64, error) {
+	if v, err := b.innerConfig.Int64(BConfig.RunMode + "::" + key); err == nil {
 		return v, nil
 	}
 	return b.innerConfig.Int64(key)
 }
 
-func (b *webAppConfig) Bool(key string) (bool, error) {
-	if v, err := b.innerConfig.Bool(BasConfig.RunMode + "::" + key); err == nil {
+func (b *bhojpurAppConfig) Bool(key string) (bool, error) {
+	if v, err := b.innerConfig.Bool(BConfig.RunMode + "::" + key); err == nil {
 		return v, nil
 	}
 	return b.innerConfig.Bool(key)
 }
 
-func (b *webAppConfig) Float(key string) (float64, error) {
-	if v, err := b.innerConfig.Float(BasConfig.RunMode + "::" + key); err == nil {
+func (b *bhojpurAppConfig) Float(key string) (float64, error) {
+	if v, err := b.innerConfig.Float(BConfig.RunMode + "::" + key); err == nil {
 		return v, nil
 	}
 	return b.innerConfig.Float(key)
 }
 
-func (b *webAppConfig) DefaultString(key string, defaultVal string) string {
+func (b *bhojpurAppConfig) DefaultString(key string, defaultVal string) string {
 	if v, err := b.String(key); v != "" && err == nil {
 		return v
 	}
 	return defaultVal
 }
 
-func (b *webAppConfig) DefaultStrings(key string, defaultVal []string) []string {
+func (b *bhojpurAppConfig) DefaultStrings(key string, defaultVal []string) []string {
 	if v, err := b.Strings(key); len(v) != 0 && err == nil {
 		return v
 	}
 	return defaultVal
 }
 
-func (b *webAppConfig) DefaultInt(key string, defaultVal int) int {
+func (b *bhojpurAppConfig) DefaultInt(key string, defaultVal int) int {
 	if v, err := b.Int(key); err == nil {
 		return v
 	}
 	return defaultVal
 }
 
-func (b *webAppConfig) DefaultInt64(key string, defaultVal int64) int64 {
+func (b *bhojpurAppConfig) DefaultInt64(key string, defaultVal int64) int64 {
 	if v, err := b.Int64(key); err == nil {
 		return v
 	}
 	return defaultVal
 }
 
-func (b *webAppConfig) DefaultBool(key string, defaultVal bool) bool {
+func (b *bhojpurAppConfig) DefaultBool(key string, defaultVal bool) bool {
 	if v, err := b.Bool(key); err == nil {
 		return v
 	}
 	return defaultVal
 }
 
-func (b *webAppConfig) DefaultFloat(key string, defaultVal float64) float64 {
+func (b *bhojpurAppConfig) DefaultFloat(key string, defaultVal float64) float64 {
 	if v, err := b.Float(key); err == nil {
 		return v
 	}
 	return defaultVal
 }
 
-func (b *webAppConfig) DIY(key string) (interface{}, error) {
+func (b *bhojpurAppConfig) DIY(key string) (interface{}, error) {
 	return b.innerConfig.DIY(key)
 }
 
-func (b *webAppConfig) GetSection(section string) (map[string]string, error) {
+func (b *bhojpurAppConfig) GetSection(section string) (map[string]string, error) {
 	return b.innerConfig.GetSection(section)
 }
 
-func (b *webAppConfig) SaveConfigFile(filename string) error {
+func (b *bhojpurAppConfig) SaveConfigFile(filename string) error {
 	return b.innerConfig.SaveConfigFile(filename)
 }

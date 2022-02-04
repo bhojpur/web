@@ -21,7 +21,7 @@ package utils
 // THE SOFTWARE.
 
 import (
-	"github.com/bhojpur/web/pkg/core/utils"
+	"github.com/bhojpur/token/pkg/utils"
 )
 
 // RandomCreateBytes generate random []byte by specify chars.

@@ -24,8 +24,8 @@ import (
 	"net/http"
 	"time"
 
-	ctxapp "github.com/bhojpur/web/pkg/adapter/context"
-	ctxsvr "github.com/bhojpur/web/pkg/context"
+	ctxadp "github.com/bhojpur/web/pkg/adapter/context"
+	"github.com/bhojpur/web/pkg/context"
 	websvr "github.com/bhojpur/web/pkg/engine"
 )
 
@@ -50,15 +50,15 @@ var (
 
 // FilterHandler is an interface for
 type FilterHandler interface {
-	Filter(*ctxapp.Context) bool
+	Filter(*ctxadp.Context) bool
 }
 
 type newToOldFtHdlAdapter struct {
 	delegate websvr.FilterHandler
 }
 
-func (n *newToOldFtHdlAdapter) Filter(ctx *ctxapp.Context) bool {
-	return n.delegate.Filter((*ctxsvr.Context)(ctx))
+func (n *newToOldFtHdlAdapter) Filter(ctx *ctxadp.Context) bool {
+	return n.delegate.Filter((*context.Context)(ctx))
 }
 
 // ExceptMethodAppend to append a slice's value into "exceptMethod", for controller's methods shouldn't reflect to AutoRouter
@@ -91,8 +91,8 @@ func NewControllerRegister() *ControllerRegister {
 //	Add("/api/delete",&RestController{},"delete:DeleteFood")
 //	Add("/api",&RestController{},"get,post:ApiFunc"
 //	Add("/simple",&SimpleController{},"get:GetFunc;post:PostFunc")
-func (p *ControllerRegister) Add(pattern string, c websvr.ControllerInterface, mappingMethods ...string) {
-	(*websvr.ControllerRegister)(p).Add(pattern, c, mappingMethods...)
+func (p *ControllerRegister) Add(pattern string, c ControllerInterface, mappingMethods ...string) {
+	(*websvr.ControllerRegister)(p).Add(pattern, c, websvr.WithRouterMethods(c, mappingMethods...))
 }
 
 // Include only when the Runmode is dev will generate router file in the router/auto.go from the controller
@@ -108,13 +108,13 @@ func (p *ControllerRegister) Include(cList ...ControllerInterface) {
 //  ctx := p.GetContext()
 //  ctx.Reset(w, q)
 //  defer p.GiveBackContext(ctx)
-func (p *ControllerRegister) GetContext() *ctxapp.Context {
-	return (*ctxapp.Context)((*websvr.ControllerRegister)(p).GetContext())
+func (p *ControllerRegister) GetContext() *ctxadp.Context {
+	return (*ctxadp.Context)((*websvr.ControllerRegister)(p).GetContext())
 }
 
 // GiveBackContext put the ctx into pool so that it could be reuse
-func (p *ControllerRegister) GiveBackContext(ctx *ctxapp.Context) {
-	(*websvr.ControllerRegister)(p).GiveBackContext((*ctxsvr.Context)(ctx))
+func (p *ControllerRegister) GiveBackContext(ctx *ctxadp.Context) {
+	(*websvr.ControllerRegister)(p).GiveBackContext((*context.Context)(ctx))
 }
 
 // Get add get method
@@ -123,8 +123,8 @@ func (p *ControllerRegister) GiveBackContext(ctx *ctxapp.Context) {
 //          ctx.Output.Body("hello world")
 //    })
 func (p *ControllerRegister) Get(pattern string, f FilterFunc) {
-	(*websvr.ControllerRegister)(p).Get(pattern, func(ctx *ctxsvr.Context) {
-		f((*ctxapp.Context)(ctx))
+	(*websvr.ControllerRegister)(p).Get(pattern, func(ctx *context.Context) {
+		f((*ctxadp.Context)(ctx))
 	})
 }
 
@@ -134,8 +134,8 @@ func (p *ControllerRegister) Get(pattern string, f FilterFunc) {
 //          ctx.Output.Body("hello world")
 //    })
 func (p *ControllerRegister) Post(pattern string, f FilterFunc) {
-	(*websvr.ControllerRegister)(p).Post(pattern, func(ctx *ctxsvr.Context) {
-		f((*ctxapp.Context)(ctx))
+	(*websvr.ControllerRegister)(p).Post(pattern, func(ctx *context.Context) {
+		f((*ctxadp.Context)(ctx))
 	})
 }
 
@@ -145,8 +145,8 @@ func (p *ControllerRegister) Post(pattern string, f FilterFunc) {
 //          ctx.Output.Body("hello world")
 //    })
 func (p *ControllerRegister) Put(pattern string, f FilterFunc) {
-	(*websvr.ControllerRegister)(p).Put(pattern, func(ctx *ctxsvr.Context) {
-		f((*ctxapp.Context)(ctx))
+	(*websvr.ControllerRegister)(p).Put(pattern, func(ctx *context.Context) {
+		f((*ctxadp.Context)(ctx))
 	})
 }
 
@@ -156,8 +156,8 @@ func (p *ControllerRegister) Put(pattern string, f FilterFunc) {
 //          ctx.Output.Body("hello world")
 //    })
 func (p *ControllerRegister) Delete(pattern string, f FilterFunc) {
-	(*websvr.ControllerRegister)(p).Delete(pattern, func(ctx *ctxsvr.Context) {
-		f((*ctxapp.Context)(ctx))
+	(*websvr.ControllerRegister)(p).Delete(pattern, func(ctx *context.Context) {
+		f((*ctxadp.Context)(ctx))
 	})
 }
 
@@ -167,8 +167,8 @@ func (p *ControllerRegister) Delete(pattern string, f FilterFunc) {
 //          ctx.Output.Body("hello world")
 //    })
 func (p *ControllerRegister) Head(pattern string, f FilterFunc) {
-	(*websvr.ControllerRegister)(p).Head(pattern, func(ctx *ctxsvr.Context) {
-		f((*ctxapp.Context)(ctx))
+	(*websvr.ControllerRegister)(p).Head(pattern, func(ctx *context.Context) {
+		f((*ctxadp.Context)(ctx))
 	})
 }
 
@@ -178,8 +178,8 @@ func (p *ControllerRegister) Head(pattern string, f FilterFunc) {
 //          ctx.Output.Body("hello world")
 //    })
 func (p *ControllerRegister) Patch(pattern string, f FilterFunc) {
-	(*websvr.ControllerRegister)(p).Patch(pattern, func(ctx *ctxsvr.Context) {
-		f((*ctxapp.Context)(ctx))
+	(*websvr.ControllerRegister)(p).Patch(pattern, func(ctx *context.Context) {
+		f((*ctxadp.Context)(ctx))
 	})
 }
 
@@ -189,8 +189,8 @@ func (p *ControllerRegister) Patch(pattern string, f FilterFunc) {
 //          ctx.Output.Body("hello world")
 //    })
 func (p *ControllerRegister) Options(pattern string, f FilterFunc) {
-	(*websvr.ControllerRegister)(p).Options(pattern, func(ctx *ctxsvr.Context) {
-		f((*ctxapp.Context)(ctx))
+	(*websvr.ControllerRegister)(p).Options(pattern, func(ctx *context.Context) {
+		f((*ctxadp.Context)(ctx))
 	})
 }
 
@@ -200,8 +200,8 @@ func (p *ControllerRegister) Options(pattern string, f FilterFunc) {
 //          ctx.Output.Body("hello world")
 //    })
 func (p *ControllerRegister) Any(pattern string, f FilterFunc) {
-	(*websvr.ControllerRegister)(p).Any(pattern, func(ctx *ctxsvr.Context) {
-		f((*ctxapp.Context)(ctx))
+	(*websvr.ControllerRegister)(p).Any(pattern, func(ctx *context.Context) {
+		f((*ctxadp.Context)(ctx))
 	})
 }
 
@@ -211,8 +211,8 @@ func (p *ControllerRegister) Any(pattern string, f FilterFunc) {
 //          ctx.Output.Body("hello world")
 //    })
 func (p *ControllerRegister) AddMethod(method, pattern string, f FilterFunc) {
-	(*websvr.ControllerRegister)(p).AddMethod(method, pattern, func(ctx *ctxsvr.Context) {
-		f((*ctxapp.Context)(ctx))
+	(*websvr.ControllerRegister)(p).AddMethod(method, pattern, func(ctx *context.Context) {
+		f((*ctxadp.Context)(ctx))
 	})
 }
 
@@ -222,20 +222,20 @@ func (p *ControllerRegister) Handler(pattern string, h http.Handler, options ...
 }
 
 // AddAuto router to ControllerRegister.
-// example bhojpur.AddAuto(&MainContorlller{}),
+// example websvr.AddAuto(&MainController{}),
 // MainController has method List and Page.
 // visit the url /main/list to execute List function
 // /main/page to execute Page function.
-func (p *ControllerRegister) AddAuto(c websvr.ControllerInterface) {
+func (p *ControllerRegister) AddAuto(c ControllerInterface) {
 	(*websvr.ControllerRegister)(p).AddAuto(c)
 }
 
 // AddAutoPrefix Add auto router to ControllerRegister with prefix.
-// example bhojpur.AddAutoPrefix("/admin",&MainContorlller{}),
+// example websvr.AddAutoPrefix("/admin",&MainController{}),
 // MainController has method List and Page.
 // visit the url /admin/main/list to execute List function
 // /admin/main/page to execute Page function.
-func (p *ControllerRegister) AddAutoPrefix(prefix string, c websvr.ControllerInterface) {
+func (p *ControllerRegister) AddAutoPrefix(prefix string, c ControllerInterface) {
 	(*websvr.ControllerRegister)(p).AddAutoPrefix(prefix, c)
 }
 
@@ -245,8 +245,8 @@ func (p *ControllerRegister) AddAutoPrefix(prefix string, c websvr.ControllerInt
 //   2. determining whether or not params need to be reset.
 func (p *ControllerRegister) InsertFilter(pattern string, pos int, filter FilterFunc, params ...bool) error {
 	opts := oldToNewFilterOpts(params)
-	return (*websvr.ControllerRegister)(p).InsertFilter(pattern, pos, func(ctx *ctxsvr.Context) {
-		filter((*ctxapp.Context)(ctx))
+	return (*websvr.ControllerRegister)(p).InsertFilter(pattern, pos, func(ctx *context.Context) {
+		filter((*ctxadp.Context)(ctx))
 	}, opts...)
 }
 
@@ -276,12 +276,12 @@ func (p *ControllerRegister) ServeHTTP(rw http.ResponseWriter, r *http.Request) 
 }
 
 // FindRouter Find Router info for URL
-func (p *ControllerRegister) FindRouter(ctx *ctxapp.Context) (routerInfo *ControllerInfo, isFind bool) {
-	r, ok := (*websvr.ControllerRegister)(p).FindRouter((*ctxsvr.Context)(ctx))
+func (p *ControllerRegister) FindRouter(ctx *ctxadp.Context) (routerInfo *ControllerInfo, isFind bool) {
+	r, ok := (*websvr.ControllerRegister)(p).FindRouter((*context.Context)(ctx))
 	return (*ControllerInfo)(r), ok
 }
 
 // LogAccess logging info HTTP Access
-func LogAccess(ctx *ctxapp.Context, startTime *time.Time, statusCode int) {
-	websvr.LogAccess((*ctxsvr.Context)(ctx), startTime, statusCode)
+func LogAccess(ctx *ctxadp.Context, startTime *time.Time, statusCode int) {
+	websvr.LogAccess((*context.Context)(ctx), startTime, statusCode)
 }

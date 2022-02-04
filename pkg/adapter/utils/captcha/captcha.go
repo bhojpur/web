@@ -27,7 +27,7 @@ package captcha
 // package controllers
 //
 // import (
-// 	bhojpur "github.com/bhojpur/web/pkg/engine"
+// 	websvr "github.com/bhojpur/web/pkg/engine"
 // 	"github.com/bhojpur/web/pkg/cache"
 // 	"github.com/bhojpur/web/pkg/utils/captcha"
 // )
@@ -41,7 +41,7 @@ package captcha
 // }
 //
 // type MainController struct {
-// 	bhojpur.Controller
+// 	websvr.Controller
 // }
 //
 // func (this *MainController) Get() {
@@ -71,7 +71,7 @@ import (
 	"time"
 
 	"github.com/bhojpur/web/pkg/captcha"
-	beecontext "github.com/bhojpur/web/pkg/context"
+	ctxsvr "github.com/bhojpur/web/pkg/context"
 
 	"github.com/bhojpur/web/pkg/adapter/cache"
 	"github.com/bhojpur/web/pkg/adapter/context"
@@ -96,7 +96,7 @@ type Captcha captcha.Captcha
 
 // Handler bhojpur filter handler for serve captcha image
 func (c *Captcha) Handler(ctx *context.Context) {
-	(*captcha.Captcha)(c).Handler((*beecontext.Context)(ctx))
+	(*captcha.Captcha)(c).Handler((*ctxsvr.Context)(ctx))
 }
 
 // CreateCaptchaHTML template func for output html

@@ -23,7 +23,7 @@ package utils
 import (
 	"io"
 
-	"github.com/bhojpur/web/pkg/core/utils"
+	utils "github.com/bhojpur/mail/pkg/engine"
 )
 
 // Email is the type used for email messages
@@ -36,7 +36,7 @@ type Attachment utils.Attachment
 // NewEMail create new Email struct with config json.
 // config json is followed from Email struct fields.
 func NewEMail(config string) *Email {
-	return (*Email)(utils.NewEMail(config))
+	return (*Email)(utils.NewEmail(config))
 }
 
 // Bytes Make all send information to byte

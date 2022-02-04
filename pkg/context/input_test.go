@@ -209,12 +209,12 @@ func TestParams(t *testing.T) {
 	if val := inp.Param("p2"); val != "val2_ver2" {
 		t.Fatalf("Input.Param wrong value: %s, expected %s", val, "val1_ver2")
 	}
-
 }
+
 func BenchmarkQuery(b *testing.B) {
 	bhojpurInput := NewInput()
 	bhojpurInput.Context = NewContext()
-	bhojpurInput.Context.Request, _ = http.NewRequest("POST", "http://app.bhojpur.net/?q=foo", nil)
+	bhojpurInput.Context.Request, _ = http.NewRequest("POST", "http://www.bhojpur.net/?q=foo", nil)
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			bhojpurInput.Query("q")

@@ -23,7 +23,7 @@ package engine
 import (
 	"strings"
 
-	ctxsvr "github.com/bhojpur/web/pkg/context"
+	"github.com/bhojpur/web/pkg/context"
 )
 
 // FilterChain is different from pure FilterFunc
@@ -32,7 +32,9 @@ import (
 type FilterChain func(next FilterFunc) FilterFunc
 
 // FilterFunc defines a filter function which is invoked before the controller handler is executed.
-type FilterFunc func(ctx *ctxsvr.Context)
+// It's a alias of HandleFunc
+// In fact, the HandleFunc is the last Filter. This is the truth
+type FilterFunc = HandleFunc
 
 // FilterRouter defines a filter operation which is invoked before the controller handler is executed.
 // It can match the URL against a pattern, and execute a filter function
@@ -76,7 +78,7 @@ func newFilterRouter(pattern string, filter FilterFunc, opts ...FilterOpt) *Filt
 
 // filter will check whether we need to execute the filter logic
 // return (started, done)
-func (f *FilterRouter) filter(ctx *ctxsvr.Context, urlPath string, preFilterParams map[string]string) (bool, bool) {
+func (f *FilterRouter) filter(ctx *context.Context, urlPath string, preFilterParams map[string]string) (bool, bool) {
 	if f.returnOnOutput && ctx.ResponseWriter.Started {
 		return true, true
 	}
@@ -103,7 +105,7 @@ func (f *FilterRouter) filter(ctx *ctxsvr.Context, urlPath string, preFilterPara
 // ValidRouter checks if the current request is matched by this filter.
 // If the request is matched, the values of the URL parameters defined
 // by the filter pattern are also returned.
-func (f *FilterRouter) ValidRouter(url string, ctx *ctxsvr.Context) bool {
+func (f *FilterRouter) ValidRouter(url string, ctx *context.Context) bool {
 	isOk := f.tree.Match(url, ctx)
 	if isOk != nil {
 		if b, ok := isOk.(bool); ok {

@@ -30,8 +30,8 @@ package apiauth
 //
 //	func main(){
 //		// apiauth every request
-//		bhojpur.InsertFilter("*", bhojpur.BeforeRouter,apiauth.APIBaiscAuth("appid","appkey"))
-//		bhojpur.Run()
+//		websvr.InsertFilter("*", websvr.BeforeRouter, apiauth.APIBaiscAuth("appid","appkey"))
+//		websvr.Run()
 //	}
 //
 // Advanced Usage:
@@ -41,7 +41,7 @@ package apiauth
 //		// maybe store in configure, maybe in database
 //	}
 //
-//	bhojpur.InsertFilter("*", bhojpur.BeforeRouter,apiauth.APISecretAuth(getAppSecret, 360))
+//	websvr.InsertFilter("*", websvr.BeforeRouter, apiauth.APISecretAuth(getAppSecret, 360))
 //
 // Information:
 //
@@ -66,7 +66,7 @@ import (
 
 	bhojpur "github.com/bhojpur/web/pkg/adapter"
 	"github.com/bhojpur/web/pkg/adapter/context"
-	beecontext "github.com/bhojpur/web/pkg/context"
+	ctxsvr "github.com/bhojpur/web/pkg/context"
 	"github.com/bhojpur/web/pkg/filter/apiauth"
 )
 
@@ -77,7 +77,7 @@ type AppIDToAppSecret apiauth.AppIDToAppSecret
 func APIBasicAuth(appid, appkey string) bhojpur.FilterFunc {
 	f := apiauth.APIBasicAuth(appid, appkey)
 	return func(c *context.Context) {
-		f((*beecontext.Context)(c))
+		f((*ctxsvr.Context)(c))
 	}
 }
 
@@ -90,7 +90,7 @@ func APIBaiscAuth(appid, appkey string) bhojpur.FilterFunc {
 func APISecretAuth(f AppIDToAppSecret, timeout int) bhojpur.FilterFunc {
 	ft := apiauth.APISecretAuth(apiauth.AppIDToAppSecret(f), timeout)
 	return func(ctx *context.Context) {
-		ft((*beecontext.Context)(ctx))
+		ft((*ctxsvr.Context)(ctx))
 	}
 }
 

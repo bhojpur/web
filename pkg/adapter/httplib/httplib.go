@@ -20,11 +20,12 @@ package httplib
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+// It is used as http.Client
 // Usage:
 //
 // import "github.com/bhojpur/web/pkg/client/httplib"
 //
-//	b := httplib.Post("http://app.bhojpur.net/")
+//	b := httplib.Post("http://bhojpur.net/")
 //	b.Param("username","bhojpur")
 //	b.Param("password","123456")
 //	b.PostFile("uploadfile1", "httplib.pdf")
@@ -119,12 +120,6 @@ func (b *BhojpurHTTPRequest) SetUserAgent(useragent string) *BhojpurHTTPRequest 
 	return b
 }
 
-// Debug sets show debug or not when executing request.
-func (b *BhojpurHTTPRequest) Debug(isdebug bool) *BhojpurHTTPRequest {
-	b.delegate.Debug(isdebug)
-	return b
-}
-
 // Retries sets Retries times.
 // default is 0 means no retried.
 // -1 means retried forever.
@@ -137,17 +132,6 @@ func (b *BhojpurHTTPRequest) Retries(times int) *BhojpurHTTPRequest {
 func (b *BhojpurHTTPRequest) RetryDelay(delay time.Duration) *BhojpurHTTPRequest {
 	b.delegate.RetryDelay(delay)
 	return b
-}
-
-// DumpBody setting whether need to Dump the Body.
-func (b *BhojpurHTTPRequest) DumpBody(isdump bool) *BhojpurHTTPRequest {
-	b.delegate.DumpBody(isdump)
-	return b
-}
-
-// DumpRequest return the DumpRequest
-func (b *BhojpurHTTPRequest) DumpRequest() []byte {
-	return b.delegate.DumpRequest()
 }
 
 // SetTimeout sets connect time out and read-write time out for BhojpurRequest.

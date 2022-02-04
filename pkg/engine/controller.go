@@ -34,9 +34,11 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
+
+	"google.golang.org/protobuf/proto"
 
 	session "github.com/bhojpur/session/pkg/engine"
-
 	ctxsvr "github.com/bhojpur/web/pkg/context"
 	"github.com/bhojpur/web/pkg/context/param"
 )
@@ -46,7 +48,20 @@ var (
 	ErrAbort = errors.New("user stop run")
 	// GlobalControllerRouter store comments with controller. pkgpath+controller:comments
 	GlobalControllerRouter = make(map[string][]ControllerComments)
+	copyBufferPool         sync.Pool
 )
+
+const (
+	bytePerKb    = 1024
+	copyBufferKb = 32
+	filePerm     = 0o666
+)
+
+func init() {
+	copyBufferPool.New = func() interface{} {
+		return make([]byte, bytePerKb*copyBufferKb)
+	}
+}
 
 // ControllerFilter store the filter for controller
 type ControllerFilter struct {
@@ -114,9 +129,9 @@ type Controller struct {
 	EnableRender   bool
 
 	// xsrf data
+	EnableXSRF bool
 	_xsrfToken string
 	XSRFExpire int
-	EnableXSRF bool
 
 	// session
 	CruSession session.Store
@@ -232,6 +247,37 @@ func (c *Controller) HandlerFunc(fnname string) bool {
 // URLMapping register the internal Controller router.
 func (c *Controller) URLMapping() {}
 
+// Bind if the content type is form, we read data from form
+// otherwise, read data from request body
+func (c *Controller) Bind(obj interface{}) error {
+	return c.Ctx.Bind(obj)
+}
+
+// BindYAML only read data from http request body
+func (c *Controller) BindYAML(obj interface{}) error {
+	return c.Ctx.BindYAML(obj)
+}
+
+// BindForm read data from form
+func (c *Controller) BindForm(obj interface{}) error {
+	return c.Ctx.BindForm(obj)
+}
+
+// BindJSON only read data from http request body
+func (c *Controller) BindJSON(obj interface{}) error {
+	return c.Ctx.BindJSON(obj)
+}
+
+// BindProtobuf only read data from http request body
+func (c *Controller) BindProtobuf(obj proto.Message) error {
+	return c.Ctx.BindProtobuf(obj)
+}
+
+// BindXML only read data from http request body
+func (c *Controller) BindXML(obj interface{}) error {
+	return c.Ctx.BindXML(obj)
+}
+
 // Mapping the method to function
 func (c *Controller) Mapping(method string, fn func()) {
 	c.methodMapping[method] = fn
@@ -299,7 +345,7 @@ func (c *Controller) renderTemplate() (bytes.Buffer, error) {
 	if c.TplPrefix != "" {
 		c.TplName = c.TplPrefix + c.TplName
 	}
-	if BasConfig.RunMode == DEV {
+	if BConfig.RunMode == DEV {
 		buildFiles := []string{c.TplName}
 		if c.Layout != "" {
 			buildFiles = append(buildFiles, c.Layout)
@@ -319,7 +365,7 @@ func (c *Controller) renderTemplate() (bytes.Buffer, error) {
 
 func (c *Controller) viewPath() string {
 	if c.ViewPath == "" {
-		return BasConfig.WebConfig.ViewsPath
+		return BConfig.WebConfig.ViewsPath
 	}
 	return c.ViewPath
 }
@@ -354,9 +400,9 @@ func (c *Controller) Abort(code string) {
 
 // CustomAbort stops controller handler and show the error data, it's similar Aborts, but support status code and body.
 func (c *Controller) CustomAbort(status int, body string) {
+	c.Ctx.Output.Status = status
 	// first panic from ErrorMaps, it is user defined error functions.
 	if _, ok := ErrorMaps[body]; ok {
-		c.Ctx.Output.Status = status
 		panic(body)
 	}
 	// last panic user string
@@ -382,10 +428,30 @@ func (c *Controller) URLFor(endpoint string, values ...interface{}) string {
 	return URLFor(endpoint, values...)
 }
 
+func (c *Controller) JSONResp(data interface{}) error {
+	return c.Ctx.JSONResp(data)
+}
+
+func (c *Controller) XMLResp(data interface{}) error {
+	return c.Ctx.XMLResp(data)
+}
+
+func (c *Controller) YamlResp(data interface{}) error {
+	return c.Ctx.YamlResp(data)
+}
+
+// Resp sends response based on the Accept Header
+// By default response will be in JSON
+// it's different from ServeXXX methods
+// because we don't store the data to Data field
+func (c *Controller) Resp(data interface{}) error {
+	return c.Ctx.Resp(data)
+}
+
 // ServeJSON sends a json response with encoding charset.
 func (c *Controller) ServeJSON(encoding ...bool) error {
 	var (
-		hasIndent   = BasConfig.RunMode != PROD
+		hasIndent   = BConfig.RunMode != PROD
 		hasEncoding = len(encoding) > 0 && encoding[0]
 	)
 
@@ -394,13 +460,13 @@ func (c *Controller) ServeJSON(encoding ...bool) error {
 
 // ServeJSONP sends a jsonp response.
 func (c *Controller) ServeJSONP() error {
-	hasIndent := BasConfig.RunMode != PROD
+	hasIndent := BConfig.RunMode != PROD
 	return c.Ctx.Output.JSONP(c.Data["jsonp"], hasIndent)
 }
 
 // ServeXML sends xml response.
 func (c *Controller) ServeXML() error {
-	hasIndent := BasConfig.RunMode != PROD
+	hasIndent := BConfig.RunMode != PROD
 	return c.Ctx.Output.XML(c.Data["xml"], hasIndent)
 }
 
@@ -411,7 +477,7 @@ func (c *Controller) ServeYAML() error {
 
 // ServeFormatted serve YAML, XML OR JSON, depending on the value of the Accept header
 func (c *Controller) ServeFormatted(encoding ...bool) error {
-	hasIndent := BasConfig.RunMode != PROD
+	hasIndent := BConfig.RunMode != PROD
 	hasEncoding := len(encoding) > 0 && encoding[0]
 	return c.Ctx.Output.ServeFormatted(c.Data, hasIndent, hasEncoding)
 }
@@ -429,11 +495,7 @@ func (c *Controller) Input() (url.Values, error) {
 
 // ParseForm maps input data map to obj struct.
 func (c *Controller) ParseForm(obj interface{}) error {
-	form, err := c.Input()
-	if err != nil {
-		return err
-	}
-	return ParseForm(form, obj)
+	return c.Ctx.BindForm(obj)
 }
 
 // GetString returns the input value by key string or the default value while it's present and input is blank
@@ -611,19 +673,31 @@ func (c *Controller) GetFiles(key string) ([]*multipart.FileHeader, error) {
 
 // SaveToFile saves uploaded file to new path.
 // it only operates the first one of mutil-upload form file field.
-func (c *Controller) SaveToFile(fromfile, tofile string) error {
-	file, _, err := c.Ctx.Request.FormFile(fromfile)
+func (c *Controller) SaveToFile(fromFile, toFile string) error {
+	buf := copyBufferPool.Get().([]byte)
+	defer copyBufferPool.Put(buf)
+	return c.SaveToFileWithBuffer(fromFile, toFile, buf)
+}
+
+type onlyWriter struct {
+	io.Writer
+}
+
+func (c *Controller) SaveToFileWithBuffer(fromFile string, toFile string, buf []byte) error {
+	src, _, err := c.Ctx.Request.FormFile(fromFile)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
-	f, err := os.OpenFile(tofile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
+	defer src.Close()
+
+	dst, err := os.OpenFile(toFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, filePerm)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	io.Copy(f, file)
-	return nil
+	defer dst.Close()
+
+	_, err = io.CopyBuffer(onlyWriter{dst}, src, buf)
+	return err
 }
 
 // StartSession starts session and load old session data info this controller.
@@ -699,11 +773,11 @@ func (c *Controller) SetSecureCookie(Secret, name, value string, others ...inter
 // XSRFToken creates a CSRF token string and returns.
 func (c *Controller) XSRFToken() string {
 	if c._xsrfToken == "" {
-		expire := int64(BasConfig.WebConfig.XSRFExpire)
+		expire := int64(BConfig.WebConfig.XSRFExpire)
 		if c.XSRFExpire > 0 {
 			expire = int64(c.XSRFExpire)
 		}
-		c._xsrfToken = c.Ctx.XSRFToken(BasConfig.WebConfig.XSRFKey, expire)
+		c._xsrfToken = c.Ctx.XSRFToken(BConfig.WebConfig.XSRFKey, expire)
 	}
 	return c._xsrfToken
 }

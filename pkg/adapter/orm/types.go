@@ -101,7 +101,7 @@ type Ormer interface {
 	// return a QuerySeter for table operations.
 	// table name can be string or struct.
 	// e.g. QueryTable("user"), QueryTable(&user{}) or QueryTable((*User)(nil)),
-	QueryTable(ptrStructOrTableName interface{}) QuerySeter
+	QueryTable(ptrStructOrTableName interface{}) QuerySetter
 	// switch to another registered database driver by given name.
 	Using(name string) error
 	// begin transaction
@@ -138,8 +138,8 @@ type Ormer interface {
 // Inserter insert prepared statement
 type Inserter orm.Inserter
 
-// QuerySeter query seter
-type QuerySeter orm.QuerySeter
+// QuerySetter query seter
+type QuerySetter orm.QuerySetter
 
 // QueryM2Mer model to model query struct
 // all operations are on the m2m table only, will not affect the origin model table

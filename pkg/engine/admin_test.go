@@ -31,14 +31,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/bhojpur/web/pkg/core/admin"
+	webadm "github.com/bhojpur/web/pkg/core/admin"
 )
 
-type SampleDatabaseCheck struct {
-}
+type SampleDatabaseCheck struct{}
 
-type SampleCacheCheck struct {
-}
+type SampleCacheCheck struct{}
 
 func (dc *SampleDatabaseCheck) Check() error {
 	return nil
@@ -50,8 +48,7 @@ func (cc *SampleCacheCheck) Check() error {
 
 func TestList_01(t *testing.T) {
 	m := make(M)
-	list("BasConfig", BasConfig, m)
-	t.Log(m)
+	list("BConfig", BConfig, m)
 	om := oldMap()
 	for k, v := range om {
 		if fmt.Sprint(m[k]) != fmt.Sprint(v) {
@@ -63,65 +60,63 @@ func TestList_01(t *testing.T) {
 
 func oldMap() M {
 	m := make(M)
-	m["BasConfig.AppName"] = BasConfig.AppName
-	m["BasConfig.RunMode"] = BasConfig.RunMode
-	m["BasConfig.RouterCaseSensitive"] = BasConfig.RouterCaseSensitive
-	m["BasConfig.ServerName"] = BasConfig.ServerName
-	m["BasConfig.RecoverPanic"] = BasConfig.RecoverPanic
-	m["BasConfig.CopyRequestBody"] = BasConfig.CopyRequestBody
-	m["BasConfig.EnableGzip"] = BasConfig.EnableGzip
-	m["BasConfig.MaxMemory"] = BasConfig.MaxMemory
-	m["BasConfig.EnableErrorsShow"] = BasConfig.EnableErrorsShow
-	m["BasConfig.Listen.Graceful"] = BasConfig.Listen.Graceful
-	m["BasConfig.Listen.ServerTimeOut"] = BasConfig.Listen.ServerTimeOut
-	m["BasConfig.Listen.ListenTCP4"] = BasConfig.Listen.ListenTCP4
-	m["BasConfig.Listen.EnableHTTP"] = BasConfig.Listen.EnableHTTP
-	m["BasConfig.Listen.HTTPAddr"] = BasConfig.Listen.HTTPAddr
-	m["BasConfig.Listen.HTTPPort"] = BasConfig.Listen.HTTPPort
-	m["BasConfig.Listen.EnableHTTPS"] = BasConfig.Listen.EnableHTTPS
-	m["BasConfig.Listen.HTTPSAddr"] = BasConfig.Listen.HTTPSAddr
-	m["BasConfig.Listen.HTTPSPort"] = BasConfig.Listen.HTTPSPort
-	m["BasConfig.Listen.HTTPSCertFile"] = BasConfig.Listen.HTTPSCertFile
-	m["BasConfig.Listen.HTTPSKeyFile"] = BasConfig.Listen.HTTPSKeyFile
-	m["BasConfig.Listen.EnableAdmin"] = BasConfig.Listen.EnableAdmin
-	m["BasConfig.Listen.AdminAddr"] = BasConfig.Listen.AdminAddr
-	m["BasConfig.Listen.AdminPort"] = BasConfig.Listen.AdminPort
-	m["BasConfig.Listen.EnableFcgi"] = BasConfig.Listen.EnableFcgi
-	m["BasConfig.Listen.EnableStdIo"] = BasConfig.Listen.EnableStdIo
-	m["BasConfig.WebConfig.AutoRender"] = BasConfig.WebConfig.AutoRender
-	m["BasConfig.WebConfig.EnableDocs"] = BasConfig.WebConfig.EnableDocs
-	m["BasConfig.WebConfig.FlashName"] = BasConfig.WebConfig.FlashName
-	m["BasConfig.WebConfig.FlashSeparator"] = BasConfig.WebConfig.FlashSeparator
-	m["BasConfig.WebConfig.DirectoryIndex"] = BasConfig.WebConfig.DirectoryIndex
-	m["BasConfig.WebConfig.StaticDir"] = BasConfig.WebConfig.StaticDir
-	m["BasConfig.WebConfig.StaticExtensionsToGzip"] = BasConfig.WebConfig.StaticExtensionsToGzip
-	m["BasConfig.WebConfig.StaticCacheFileSize"] = BasConfig.WebConfig.StaticCacheFileSize
-	m["BasConfig.WebConfig.StaticCacheFileNum"] = BasConfig.WebConfig.StaticCacheFileNum
-	m["BasConfig.WebConfig.TemplateLeft"] = BasConfig.WebConfig.TemplateLeft
-	m["BasConfig.WebConfig.TemplateRight"] = BasConfig.WebConfig.TemplateRight
-	m["BasConfig.WebConfig.ViewsPath"] = BasConfig.WebConfig.ViewsPath
-	m["BasConfig.WebConfig.EnableXSRF"] = BasConfig.WebConfig.EnableXSRF
-	m["BasConfig.WebConfig.XSRFExpire"] = BasConfig.WebConfig.XSRFExpire
-	m["BasConfig.WebConfig.Session.SessionOn"] = BasConfig.WebConfig.Session.SessionOn
-	m["BasConfig.WebConfig.Session.SessionProvider"] = BasConfig.WebConfig.Session.SessionProvider
-	m["BasConfig.WebConfig.Session.SessionName"] = BasConfig.WebConfig.Session.SessionName
-	m["BasConfig.WebConfig.Session.SessionGCMaxLifetime"] = BasConfig.WebConfig.Session.SessionGCMaxLifetime
-	m["BasConfig.WebConfig.Session.SessionProviderConfig"] = BasConfig.WebConfig.Session.SessionProviderConfig
-	m["BasConfig.WebConfig.Session.SessionCookieLifeTime"] = BasConfig.WebConfig.Session.SessionCookieLifeTime
-	m["BasConfig.WebConfig.Session.SessionAutoSetCookie"] = BasConfig.WebConfig.Session.SessionAutoSetCookie
-	m["BasConfig.WebConfig.Session.SessionDomain"] = BasConfig.WebConfig.Session.SessionDomain
-	m["BasConfig.WebConfig.Session.SessionDisableHTTPOnly"] = BasConfig.WebConfig.Session.SessionDisableHTTPOnly
-	m["BasConfig.Log.AccessLogs"] = BasConfig.Log.AccessLogs
-	m["BasConfig.Log.EnableStaticLogs"] = BasConfig.Log.EnableStaticLogs
-	m["BasConfig.Log.AccessLogsFormat"] = BasConfig.Log.AccessLogsFormat
-	m["BasConfig.Log.FileLineNum"] = BasConfig.Log.FileLineNum
-	m["BasConfig.Log.Outputs"] = BasConfig.Log.Outputs
+	m["BConfig.AppName"] = BConfig.AppName
+	m["BConfig.RunMode"] = BConfig.RunMode
+	m["BConfig.RouterCaseSensitive"] = BConfig.RouterCaseSensitive
+	m["BConfig.ServerName"] = BConfig.ServerName
+	m["BConfig.RecoverPanic"] = BConfig.RecoverPanic
+	m["BConfig.CopyRequestBody"] = BConfig.CopyRequestBody
+	m["BConfig.EnableGzip"] = BConfig.EnableGzip
+	m["BConfig.MaxMemory"] = BConfig.MaxMemory
+	m["BConfig.EnableErrorsShow"] = BConfig.EnableErrorsShow
+	m["BConfig.Listen.Graceful"] = BConfig.Listen.Graceful
+	m["BConfig.Listen.ServerTimeOut"] = BConfig.Listen.ServerTimeOut
+	m["BConfig.Listen.ListenTCP4"] = BConfig.Listen.ListenTCP4
+	m["BConfig.Listen.EnableHTTP"] = BConfig.Listen.EnableHTTP
+	m["BConfig.Listen.HTTPAddr"] = BConfig.Listen.HTTPAddr
+	m["BConfig.Listen.HTTPPort"] = BConfig.Listen.HTTPPort
+	m["BConfig.Listen.EnableHTTPS"] = BConfig.Listen.EnableHTTPS
+	m["BConfig.Listen.HTTPSAddr"] = BConfig.Listen.HTTPSAddr
+	m["BConfig.Listen.HTTPSPort"] = BConfig.Listen.HTTPSPort
+	m["BConfig.Listen.HTTPSCertFile"] = BConfig.Listen.HTTPSCertFile
+	m["BConfig.Listen.HTTPSKeyFile"] = BConfig.Listen.HTTPSKeyFile
+	m["BConfig.Listen.EnableAdmin"] = BConfig.Listen.EnableAdmin
+	m["BConfig.Listen.AdminAddr"] = BConfig.Listen.AdminAddr
+	m["BConfig.Listen.AdminPort"] = BConfig.Listen.AdminPort
+	m["BConfig.Listen.EnableFcgi"] = BConfig.Listen.EnableFcgi
+	m["BConfig.Listen.EnableStdIo"] = BConfig.Listen.EnableStdIo
+	m["BConfig.WebConfig.AutoRender"] = BConfig.WebConfig.AutoRender
+	m["BConfig.WebConfig.EnableDocs"] = BConfig.WebConfig.EnableDocs
+	m["BConfig.WebConfig.FlashName"] = BConfig.WebConfig.FlashName
+	m["BConfig.WebConfig.FlashSeparator"] = BConfig.WebConfig.FlashSeparator
+	m["BConfig.WebConfig.DirectoryIndex"] = BConfig.WebConfig.DirectoryIndex
+	m["BConfig.WebConfig.StaticDir"] = BConfig.WebConfig.StaticDir
+	m["BConfig.WebConfig.StaticExtensionsToGzip"] = BConfig.WebConfig.StaticExtensionsToGzip
+	m["BConfig.WebConfig.StaticCacheFileSize"] = BConfig.WebConfig.StaticCacheFileSize
+	m["BConfig.WebConfig.StaticCacheFileNum"] = BConfig.WebConfig.StaticCacheFileNum
+	m["BConfig.WebConfig.TemplateLeft"] = BConfig.WebConfig.TemplateLeft
+	m["BConfig.WebConfig.TemplateRight"] = BConfig.WebConfig.TemplateRight
+	m["BConfig.WebConfig.ViewsPath"] = BConfig.WebConfig.ViewsPath
+	m["BConfig.WebConfig.EnableXSRF"] = BConfig.WebConfig.EnableXSRF
+	m["BConfig.WebConfig.XSRFExpire"] = BConfig.WebConfig.XSRFExpire
+	m["BConfig.WebConfig.Session.SessionOn"] = BConfig.WebConfig.Session.SessionOn
+	m["BConfig.WebConfig.Session.SessionProvider"] = BConfig.WebConfig.Session.SessionProvider
+	m["BConfig.WebConfig.Session.SessionName"] = BConfig.WebConfig.Session.SessionName
+	m["BConfig.WebConfig.Session.SessionGCMaxLifetime"] = BConfig.WebConfig.Session.SessionGCMaxLifetime
+	m["BConfig.WebConfig.Session.SessionProviderConfig"] = BConfig.WebConfig.Session.SessionProviderConfig
+	m["BConfig.WebConfig.Session.SessionCookieLifeTime"] = BConfig.WebConfig.Session.SessionCookieLifeTime
+	m["BConfig.WebConfig.Session.SessionAutoSetCookie"] = BConfig.WebConfig.Session.SessionAutoSetCookie
+	m["BConfig.WebConfig.Session.SessionDomain"] = BConfig.WebConfig.Session.SessionDomain
+	m["BConfig.WebConfig.Session.SessionDisableHTTPOnly"] = BConfig.WebConfig.Session.SessionDisableHTTPOnly
+	m["BConfig.Log.AccessLogs"] = BConfig.Log.AccessLogs
+	m["BConfig.Log.EnableStaticLogs"] = BConfig.Log.EnableStaticLogs
+	m["BConfig.Log.AccessLogsFormat"] = BConfig.Log.AccessLogsFormat
+	m["BConfig.Log.FileLineNum"] = BConfig.Log.FileLineNum
+	m["BConfig.Log.Outputs"] = BConfig.Log.Outputs
 	return m
 }
 
 func TestWriteJSON(t *testing.T) {
-	t.Log("Testing the adding of JSON to the response")
-
 	w := httptest.NewRecorder()
 	originalBody := []int{1, 2, 3}
 
@@ -131,7 +126,6 @@ func TestWriteJSON(t *testing.T) {
 
 	decodedBody := []int{}
 	err := json.NewDecoder(w.Body).Decode(&decodedBody)
-
 	if err != nil {
 		t.Fatal("Could not decode response body into slice.")
 	}
@@ -146,8 +140,8 @@ func TestWriteJSON(t *testing.T) {
 func TestHealthCheckHandlerDefault(t *testing.T) {
 	endpointPath := "/healthcheck"
 
-	admin.AddHealthCheck("database", &SampleDatabaseCheck{})
-	admin.AddHealthCheck("cache", &SampleCacheCheck{})
+	webadm.AddHealthCheck("database", &SampleDatabaseCheck{})
+	webadm.AddHealthCheck("cache", &SampleCacheCheck{})
 
 	req, err := http.NewRequest("GET", endpointPath, nil)
 	if err != nil {
@@ -167,17 +161,16 @@ func TestHealthCheckHandlerDefault(t *testing.T) {
 	if !strings.Contains(w.Body.String(), "database") {
 		t.Errorf("Expected 'database' in generated template.")
 	}
-
 }
 
 func TestBuildHealthCheckResponseList(t *testing.T) {
 	healthCheckResults := [][]string{
-		[]string{
+		{
 			"error",
 			"Database",
-			"Error occured whie starting the db",
+			"Error occurred whie starting the db",
 		},
-		[]string{
+		{
 			"success",
 			"Cache",
 			"Cache started successfully",
@@ -200,15 +193,12 @@ func TestBuildHealthCheckResponseList(t *testing.T) {
 				t.Errorf("expected %s to be in the response %v", field, response)
 			}
 		}
-
 	}
-
 }
 
 func TestHealthCheckHandlerReturnsJSON(t *testing.T) {
-
-	admin.AddHealthCheck("database", &SampleDatabaseCheck{})
-	admin.AddHealthCheck("cache", &SampleCacheCheck{})
+	webadm.AddHealthCheck("database", &SampleDatabaseCheck{})
+	webadm.AddHealthCheck("cache", &SampleCacheCheck{})
 
 	req, err := http.NewRequest("GET", "/healthcheck?json=true", nil)
 	if err != nil {
@@ -265,5 +255,4 @@ func TestHealthCheckHandlerReturnsJSON(t *testing.T) {
 
 	assert.Equal(t, expectedResponseBody[0], database)
 	assert.Equal(t, expectedResponseBody[1], cache)
-
 }

@@ -29,7 +29,7 @@ import (
 	logsvr "github.com/bhojpur/logger/pkg/engine"
 )
 
-// webAdminApp is the default adminApp used by admin module.
+// WebAdminApp is the default adminApp used by admin module.
 var webAdminApp *adminApp
 
 // FilterMonitorFunc is default monitor filter when admin module is enable.
@@ -47,13 +47,11 @@ var webAdminApp *adminApp
 //	 	}
 //	 	return true
 // 	}
-// 	bhojpur.FilterMonitorFunc = MyFilterMonitor.
+// 	websvr.FilterMonitorFunc = MyFilterMonitor.
 var FilterMonitorFunc func(string, string, time.Duration, string, int) bool
 
 func init() {
-
 	FilterMonitorFunc = func(string, string, time.Duration, string, int) bool { return true }
-
 }
 
 func list(root string, p interface{}, m M) {
@@ -83,39 +81,34 @@ func writeJSON(rw http.ResponseWriter, jsonData []byte) {
 	rw.Write(jsonData)
 }
 
-// adminApp is an http.HandlerFunc map used as beeAdminApp.
+// adminApp is an http.HandlerFunc map used as webAdminApp.
 type adminApp struct {
 	*HttpServer
 }
 
-// Route adds http.HandlerFunc to adminApp with url pattern.
+// Run start Bhojpur Web admin
 func (admin *adminApp) Run() {
-
-	// if len(task.AdminTaskList) > 0 {
-	// 	task.StartTask()
-	// }
-	logsvr.Warning("now we don't start tasks here, if you use task module," +
+	logsvr.Debug("now we don't start tasks here, if you use task module," +
 		" please invoke task.StartTask, or task will not be executed")
-
-	addr := BasConfig.Listen.AdminAddr
-
-	if BasConfig.Listen.AdminPort != 0 {
-		addr = fmt.Sprintf("%s:%d", BasConfig.Listen.AdminAddr, BasConfig.Listen.AdminPort)
+	addr := BConfig.Listen.AdminAddr
+	if BConfig.Listen.AdminPort != 0 {
+		addr = fmt.Sprintf("%s:%d", BConfig.Listen.AdminAddr, BConfig.Listen.AdminPort)
 	}
-
-	logsvr.Info("Admin server Running on %s", addr)
-
+	logsvr.Info("Bhojpur Web - Administration server running on %s", addr)
 	admin.HttpServer.Run(addr)
 }
 
 func registerAdmin() error {
-	if BasConfig.Listen.EnableAdmin {
+	if BConfig.Listen.EnableAdmin {
 
 		c := &adminController{
 			servers: make([]*HttpServer, 0, 2),
 		}
+
+		// copy config to avoid conflict
+		adminCfg := *BConfig
 		webAdminApp = &adminApp{
-			HttpServer: NewHttpServerWithCfg(BasConfig),
+			HttpServer: NewHttpServerWithCfg(&adminCfg),
 		}
 		// keep in mind that all data should be html escaped to avoid XSS attack
 		webAdminApp.Router("/", c, "get:AdminIndex")

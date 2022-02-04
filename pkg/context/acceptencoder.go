@@ -71,7 +71,7 @@ type nopResetWriter struct {
 }
 
 func (n nopResetWriter) Reset(w io.Writer) {
-	//do nothing
+	// do nothing
 }
 
 type acceptEncoder struct {
@@ -125,7 +125,7 @@ var (
 		bestCompressionPool:     &sync.Pool{New: func() interface{} { wr, _ := gzip.NewWriterLevel(nil, flate.BestCompression); return wr }},
 	}
 
-	// The deflate compress in HTTP is zlib indeed
+	// According to: http://tools.ietf.org/html/rfc2616#section-3.5 the deflate compress in http is zlib indeed
 	// deflate
 	// The "zlib" format defined in RFC 1950 [31] in combination with
 	// the "deflate" compression mechanism described in RFC 1951 [29].
@@ -137,14 +137,12 @@ var (
 	}
 )
 
-var (
-	encoderMap = map[string]acceptEncoder{ // all the other compress methods will ignore
-		"gzip":     gzipCompressEncoder,
-		"deflate":  deflateCompressEncoder,
-		"*":        gzipCompressEncoder, // * means any compress will accept,we prefer gzip
-		"identity": noneCompressEncoder, // identity means none-compress
-	}
-)
+var encoderMap = map[string]acceptEncoder{ // all the other compress methods will ignore
+	"gzip":     gzipCompressEncoder,
+	"deflate":  deflateCompressEncoder,
+	"*":        gzipCompressEncoder, // * means any compress will accept,we prefer gzip
+	"identity": noneCompressEncoder, // identity means none-compress
+}
 
 // WriteFile reads from file and writes to writer by the specific encoding(gzip/deflate)
 func WriteFile(encoding string, writer io.Writer, file *os.File) (bool, string, error) {
@@ -165,7 +163,7 @@ func WriteBody(encoding string, writer io.Writer, content []byte) (bool, string,
 func writeLevel(encoding string, writer io.Writer, reader io.Reader, level int) (bool, string, error) {
 	var outputWriter resetWriter
 	var err error
-	var ce = noneCompressEncoder
+	ce := noneCompressEncoder
 
 	if cf, ok := encoderMap[encoding]; ok {
 		ce = cf
@@ -188,6 +186,7 @@ func writeLevel(encoding string, writer io.Writer, reader io.Reader, level int) 
 
 // ParseEncoding will extract the right encoding for response
 // the Accept-Encoding's sec is here:
+// http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.3
 func ParseEncoding(r *http.Request) string {
 	if r == nil {
 		return ""

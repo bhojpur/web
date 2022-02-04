@@ -30,11 +30,11 @@ import (
 	assetfs "github.com/bhojpur/web/pkg/synthesis"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/bhojpur/web/test"
+	test "github.com/bhojpur/web/test"
 )
 
 var header = `{{define "header"}}
-<h1>Hello, Bhojpur!</h1>
+<h1>Hello, Bhojpur Web!</h1>
 {{end}}`
 
 var index = `<!DOCTYPE html>
@@ -55,19 +55,18 @@ var block = `{{define "block"}}
 {{end}}`
 
 func TestTemplate(t *testing.T) {
-	wkdir, err := os.Getwd()
-	assert.Nil(t, err)
-	dir := filepath.Join(wkdir, "_beeTmp", "TestTemplate")
+	tmpDir := os.TempDir()
+	dir := filepath.Join(tmpDir, "_bhojpurTmp", "TestTemplate")
 	files := []string{
 		"header.tpl",
 		"index.tpl",
 		"blocks/block.tpl",
 	}
-	if err := os.MkdirAll(dir, 0777); err != nil {
+	if err := os.MkdirAll(dir, 0o777); err != nil {
 		t.Fatal(err)
 	}
 	for k, name := range files {
-		dirErr := os.MkdirAll(filepath.Dir(filepath.Join(dir, name)), 0777)
+		dirErr := os.MkdirAll(filepath.Dir(filepath.Join(dir, name)), 0o777)
 		assert.Nil(t, dirErr)
 		if f, err := os.Create(filepath.Join(dir, name)); err != nil {
 			t.Fatal(err)
@@ -86,11 +85,11 @@ func TestTemplate(t *testing.T) {
 	if err := AddViewPath(dir); err != nil {
 		t.Fatal(err)
 	}
-	beeTemplates := webViewPathTemplates[dir]
-	if len(beeTemplates) != 3 {
-		t.Fatalf("should be 3 but got %v", len(beeTemplates))
+	bhojpurTemplates := bhojpurViewPathTemplates[dir]
+	if len(bhojpurTemplates) != 3 {
+		t.Fatalf("should be 3 but got %v", len(bhojpurTemplates))
 	}
-	if err := beeTemplates["index.tpl"].ExecuteTemplate(os.Stdout, "index.tpl", nil); err != nil {
+	if err := bhojpurTemplates["index.tpl"].ExecuteTemplate(os.Stdout, "index.tpl", nil); err != nil {
 		t.Fatal(err)
 	}
 	for _, name := range files {
@@ -107,6 +106,7 @@ var menu = `<div class="menu">
 </ul>
 </div>
 `
+
 var user = `<!DOCTYPE html>
 <html>
   <head>
@@ -119,11 +119,10 @@ var user = `<!DOCTYPE html>
 `
 
 func TestRelativeTemplate(t *testing.T) {
-	wkdir, err := os.Getwd()
-	assert.Nil(t, err)
-	dir := filepath.Join(wkdir, "_beeTmp")
+	tmpDir := os.TempDir()
+	dir := filepath.Join(tmpDir, "_bhojpurTmp")
 
-	//Just add dir to known viewPaths
+	// Just add dir to known viewPaths
 	if err := AddViewPath(dir); err != nil {
 		t.Fatal(err)
 	}
@@ -132,11 +131,11 @@ func TestRelativeTemplate(t *testing.T) {
 		"easyui/public/menu.tpl",
 		"easyui/rbac/user.tpl",
 	}
-	if err := os.MkdirAll(dir, 0777); err != nil {
+	if err := os.MkdirAll(dir, 0o777); err != nil {
 		t.Fatal(err)
 	}
 	for k, name := range files {
-		os.MkdirAll(filepath.Dir(filepath.Join(dir, name)), 0777)
+		os.MkdirAll(filepath.Dir(filepath.Join(dir, name)), 0o777)
 		if f, err := os.Create(filepath.Join(dir, name)); err != nil {
 			t.Fatal(err)
 		} else {
@@ -151,8 +150,8 @@ func TestRelativeTemplate(t *testing.T) {
 	if err := BuildTemplate(dir, files[1]); err != nil {
 		t.Fatal(err)
 	}
-	beeTemplates := beeViewPathTemplates[dir]
-	if err := beeTemplates["easyui/rbac/user.tpl"].ExecuteTemplate(os.Stdout, "easyui/rbac/user.tpl", nil); err != nil {
+	bhojpurTemplates := bhojpurViewPathTemplates[dir]
+	if err := bhojpurTemplates["easyui/rbac/user.tpl"].ExecuteTemplate(os.Stdout, "easyui/rbac/user.tpl", nil); err != nil {
 		t.Fatal(err)
 	}
 	for _, name := range files {
@@ -165,13 +164,10 @@ var add = `{{ template "layout_blog.tpl" . }}
 {{ define "css" }}
         <link rel="stylesheet" href="/static/css/current.css">
 {{ end}}
-
-
 {{ define "content" }}
         <h2>{{ .Title }}</h2>
         <p> This is SomeVar: {{ .SomeVar }}</p>
 {{ end }}
-
 {{ define "js" }}
     <script src="/static/js/current.js"></script>
 {{ end}}`
@@ -179,7 +175,7 @@ var add = `{{ template "layout_blog.tpl" . }}
 var layoutBlog = `<!DOCTYPE html>
 <html>
 <head>
-    <title>Pramila Kumari</title>
+    <title>Pramila</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
@@ -187,7 +183,6 @@ var layoutBlog = `<!DOCTYPE html>
      {{ block "css" . }}{{ end }}
 </head>
 <body>
-
     <div class="container">
         {{ block "content" . }}{{ end }}
     </div>
@@ -200,52 +195,43 @@ var layoutBlog = `<!DOCTYPE html>
 var output = `<!DOCTYPE html>
 <html>
 <head>
-    <title>Pramila Kumari</title>
+    <title>Pramila</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap.min.css">
     <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/css/bootstrap-theme.min.css">
      
         <link rel="stylesheet" href="/static/css/current.css">
-
 </head>
 <body>
-
     <div class="container">
         
         <h2>Hello</h2>
         <p> This is SomeVar: val</p>
-
     </div>
     <script type="text/javascript" src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
     <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
      
     <script src="/static/js/current.js"></script>
-
 </body>
 </html>
-
-
-
-
-
 `
 
 func TestTemplateLayout(t *testing.T) {
-	wkdir, err := os.Getwd()
+	tmpDir, err := os.Getwd()
 	assert.Nil(t, err)
 
-	dir := filepath.Join(wkdir, "_beeTmp", "TestTemplateLayout")
+	dir := filepath.Join(tmpDir, "_bhojpurTmp", "TestTemplateLayout")
 	files := []string{
 		"add.tpl",
 		"layout_blog.tpl",
 	}
-	if err := os.MkdirAll(dir, 0777); err != nil {
+	if err := os.MkdirAll(dir, 0o777); err != nil {
 		t.Fatal(err)
 	}
 
 	for k, name := range files {
-		dirErr := os.MkdirAll(filepath.Dir(filepath.Join(dir, name)), 0777)
+		dirErr := os.MkdirAll(filepath.Dir(filepath.Join(dir, name)), 0o777)
 		assert.Nil(t, dirErr)
 		if f, err := os.Create(filepath.Join(dir, name)); err != nil {
 			t.Fatal(err)
@@ -264,13 +250,13 @@ func TestTemplateLayout(t *testing.T) {
 	if err := AddViewPath(dir); err != nil {
 		t.Fatal(err)
 	}
-	beeTemplates := beeViewPathTemplates[dir]
-	if len(beeTemplates) != 2 {
-		t.Fatalf("should be 2 but got %v", len(beeTemplates))
+	bhojpurTemplates := bhojpurViewPathTemplates[dir]
+	if len(bhojpurTemplates) != 2 {
+		t.Fatalf("should be 2 but got %v", len(bhojpurTemplates))
 	}
 	out := bytes.NewBufferString("")
 
-	if err := beeTemplates["add.tpl"].ExecuteTemplate(out, "add.tpl", map[string]string{"Title": "Hello", "SomeVar": "val"}); err != nil {
+	if err := bhojpurTemplates["add.tpl"].ExecuteTemplate(out, "add.tpl", map[string]string{"Title": "Hello", "SomeVar": "val"}); err != nil {
 		t.Fatal(err)
 	}
 	if out.String() != output {
@@ -291,28 +277,24 @@ func (d TestingFileSystem) Open(name string) (http.File, error) {
 	return d.assetfs.Open(name)
 }
 
-var outputBhojpur = `<!DOCTYPE html>
+var outputBinData = `<!DOCTYPE html>
 <html>
   <head>
     <title>Bhojpur Web - Welcome Template</title>
   </head>
   <body>
-
 	
 <h1>Hello, blocks!</h1>
-
 	
-<h1>Hello, Bhojpur!</h1>
-
+<h1>Hello, Bhojpur Web!</h1>
 	
-
 	<h2>Hello</h2>
 	<p> This is SomeVar: val</p>
   </body>
 </html>
 `
 
-func TestFsSynthesis(t *testing.T) {
+func TestFsBinData(t *testing.T) {
 	SetTemplateFSFunc(func() http.FileSystem {
 		return TestingFileSystem{&assetfs.AssetFS{Asset: test.Asset, AssetDir: test.AssetDir, AssetInfo: test.AssetInfo}}
 	})
@@ -320,19 +302,19 @@ func TestFsSynthesis(t *testing.T) {
 	if err := AddViewPath("views"); err != nil {
 		t.Fatal(err)
 	}
-	beeTemplates := webViewPathTemplates[dir]
-	if len(beeTemplates) != 3 {
-		t.Fatalf("should be 3 but got %v", len(beeTemplates))
+	bhojpurTemplates := bhojpurViewPathTemplates[dir]
+	if len(bhojpurTemplates) != 3 {
+		t.Fatalf("should be 3 but got %v", len(bhojpurTemplates))
 	}
-	if err := beeTemplates["index.tpl"].ExecuteTemplate(os.Stdout, "index.tpl", map[string]string{"Title": "Hello", "SomeVar": "val"}); err != nil {
+	if err := bhojpurTemplates["index.tpl"].ExecuteTemplate(os.Stdout, "index.tpl", map[string]string{"Title": "Hello", "SomeVar": "val"}); err != nil {
 		t.Fatal(err)
 	}
 	out := bytes.NewBufferString("")
-	if err := beeTemplates["index.tpl"].ExecuteTemplate(out, "index.tpl", map[string]string{"Title": "Hello", "SomeVar": "val"}); err != nil {
+	if err := bhojpurTemplates["index.tpl"].ExecuteTemplate(out, "index.tpl", map[string]string{"Title": "Hello", "SomeVar": "val"}); err != nil {
 		t.Fatal(err)
 	}
 
-	if out.String() != outputBhojpur {
+	if out.String() != outputBinData {
 		t.Log(out.String())
 		t.Fatal("Compare failed")
 	}

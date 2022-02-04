@@ -28,11 +28,11 @@ import (
 	"github.com/google/uuid"
 
 	session "github.com/bhojpur/session/pkg/engine"
-	webContext "github.com/bhojpur/web/pkg/context"
-	web "github.com/bhojpur/web/pkg/engine"
+	ctxsvr "github.com/bhojpur/web/pkg/context"
+	websvr "github.com/bhojpur/web/pkg/engine"
 )
 
-func testRequest(t *testing.T, handler *web.ControllerRegister, path string, method string, code int) {
+func testRequest(t *testing.T, handler *websvr.ControllerRegister, path string, method string, code int) {
 	r, _ := http.NewRequest(method, path, nil)
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, r)
@@ -44,7 +44,7 @@ func testRequest(t *testing.T, handler *web.ControllerRegister, path string, met
 
 func TestSession(t *testing.T) {
 	storeKey := uuid.New().String()
-	handler := web.NewControllerRegister()
+	handler := websvr.NewControllerRegister()
 	handler.InsertFilterChain(
 		"*",
 		Session(
@@ -59,8 +59,8 @@ func TestSession(t *testing.T) {
 	)
 	handler.InsertFilterChain(
 		"*",
-		func(next web.FilterFunc) web.FilterFunc {
-			return func(ctx *webContext.Context) {
+		func(next websvr.FilterFunc) websvr.FilterFunc {
+			return func(ctx *ctxsvr.Context) {
 				if store := ctx.Input.GetData(storeKey); store == nil {
 					t.Error(`store should not be nil`)
 				}
@@ -68,7 +68,7 @@ func TestSession(t *testing.T) {
 			}
 		},
 	)
-	handler.Any("*", func(ctx *webContext.Context) {
+	handler.Any("*", func(ctx *ctxsvr.Context) {
 		ctx.Output.SetStatus(200)
 	})
 
@@ -76,7 +76,7 @@ func TestSession(t *testing.T) {
 }
 
 func TestSession1(t *testing.T) {
-	handler := web.NewControllerRegister()
+	handler := websvr.NewControllerRegister()
 	handler.InsertFilterChain(
 		"*",
 		Session(
@@ -91,8 +91,8 @@ func TestSession1(t *testing.T) {
 	)
 	handler.InsertFilterChain(
 		"*",
-		func(next web.FilterFunc) web.FilterFunc {
-			return func(ctx *webContext.Context) {
+		func(next websvr.FilterFunc) websvr.FilterFunc {
+			return func(ctx *ctxsvr.Context) {
 				if store, err := ctx.Session(); store == nil || err != nil {
 					t.Error(`store should not be nil`)
 				}
@@ -100,7 +100,7 @@ func TestSession1(t *testing.T) {
 			}
 		},
 	)
-	handler.Any("*", func(ctx *webContext.Context) {
+	handler.Any("*", func(ctx *ctxsvr.Context) {
 		ctx.Output.SetStatus(200)
 	})
 

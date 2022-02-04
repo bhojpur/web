@@ -46,13 +46,13 @@ func TestFlashHeader(t *testing.T) {
 
 	// setup the handler
 	handler := NewControllerRegister()
-	handler.Add("/", &TestFlashController{}, "get:TestWriteFlash")
+	handler.Add("/", &TestFlashController{}, WithRouterMethods(&TestFlashController{}, "get:TestWriteFlash"))
 	handler.ServeHTTP(w, r)
 
 	// get the Set-Cookie value
 	sc := w.Header().Get("Set-Cookie")
 	// match for the expected header
-	res := strings.Contains(sc, "BHOJPUR_FLASH=%00notice%23BHOJPURFLASH%23TestFlashString%00")
+	res := strings.Contains(sc, "BHOJPURGO_FLASH=%00notice%23BHOJPURFLASH%23TestFlashString%00")
 	// validate the assertion
 	if !res {
 		t.Errorf("TestFlashHeader() unable to validate flash message")

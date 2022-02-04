@@ -37,8 +37,8 @@ import (
 
 	"golang.org/x/crypto/acme/autocert"
 
-	logs "github.com/bhojpur/logger/pkg/engine"
-	beecontext "github.com/bhojpur/web/pkg/context"
+	logsvr "github.com/bhojpur/logger/pkg/engine"
+	ctxsvr "github.com/bhojpur/web/pkg/context"
 	"github.com/bhojpur/web/pkg/core/utils"
 	"github.com/bhojpur/web/pkg/grace"
 )
@@ -106,9 +106,9 @@ func (app *HttpServer) Run(addr string, mws ...MiddleWare) {
 	if app.Cfg.Listen.EnableFcgi {
 		if app.Cfg.Listen.EnableStdIo {
 			if err = fcgi.Serve(nil, app.Handlers); err == nil { // standard I/O
-				logs.Info("Use FCGI via standard I/O")
+				logsvr.Info("Use Fast CGI via standard I/O")
 			} else {
-				logs.Critical("Cannot use FCGI via standard I/O", err)
+				logsvr.Critical("Cannot use Fast CGI via standard I/O", err)
 			}
 			return
 		}
@@ -122,10 +122,10 @@ func (app *HttpServer) Run(addr string, mws ...MiddleWare) {
 			l, err = net.Listen("tcp", addr)
 		}
 		if err != nil {
-			logs.Critical("Listen: ", err)
+			logsvr.Critical("Listen: ", err)
 		}
 		if err = fcgi.Serve(l, app.Handlers); err != nil {
-			logs.Critical("fcgi.Serve: ", err)
+			logsvr.Critical("fcgi.Serve: ", err)
 		}
 		return
 	}
@@ -139,7 +139,7 @@ func (app *HttpServer) Run(addr string, mws ...MiddleWare) {
 	}
 	app.Server.ReadTimeout = time.Duration(app.Cfg.Listen.ServerTimeOut) * time.Second
 	app.Server.WriteTimeout = time.Duration(app.Cfg.Listen.ServerTimeOut) * time.Second
-	app.Server.ErrorLog = logs.GetLogger("HTTP")
+	app.Server.ErrorLog = logsvr.GetLogger("HTTP")
 
 	// run graceful mode
 	if app.Cfg.Listen.Graceful {
@@ -159,7 +159,7 @@ func (app *HttpServer) Run(addr string, mws ...MiddleWare) {
 					if err := server.ListenAndServeMutualTLS(app.Cfg.Listen.HTTPSCertFile,
 						app.Cfg.Listen.HTTPSKeyFile,
 						app.Cfg.Listen.TrustCaFile); err != nil {
-						logs.Critical("ListenAndServeTLS: ", err, fmt.Sprintf("%d", os.Getpid()))
+						logsvr.Critical("ListenAndServeTLS: ", err, fmt.Sprintf("%d", os.Getpid()))
 						time.Sleep(100 * time.Microsecond)
 					}
 				} else {
@@ -173,7 +173,7 @@ func (app *HttpServer) Run(addr string, mws ...MiddleWare) {
 						app.Cfg.Listen.HTTPSCertFile, app.Cfg.Listen.HTTPSKeyFile = "", ""
 					}
 					if err := server.ListenAndServeTLS(app.Cfg.Listen.HTTPSCertFile, app.Cfg.Listen.HTTPSKeyFile); err != nil {
-						logs.Critical("ListenAndServeTLS: ", err, fmt.Sprintf("%d", os.Getpid()))
+						logsvr.Critical("ListenAndServeTLS: ", err, fmt.Sprintf("%d", os.Getpid()))
 						time.Sleep(100 * time.Microsecond)
 					}
 				}
@@ -189,7 +189,7 @@ func (app *HttpServer) Run(addr string, mws ...MiddleWare) {
 					server.Network = "tcp4"
 				}
 				if err := server.ListenAndServe(); err != nil {
-					logs.Critical("ListenAndServe: ", err, fmt.Sprintf("%d", os.Getpid()))
+					logsvr.Critical("ListenAndServe: ", err, fmt.Sprintf("%d", os.Getpid()))
 					time.Sleep(100 * time.Microsecond)
 				}
 				endRunning <- true
@@ -206,10 +206,10 @@ func (app *HttpServer) Run(addr string, mws ...MiddleWare) {
 			if app.Cfg.Listen.HTTPSPort != 0 {
 				app.Server.Addr = fmt.Sprintf("%s:%d", app.Cfg.Listen.HTTPSAddr, app.Cfg.Listen.HTTPSPort)
 			} else if app.Cfg.Listen.EnableHTTP {
-				logs.Info("Start https server error, conflict with http. Please reset https port")
+				logsvr.Info("Start https server error, conflict with http. Please reset https port")
 				return
 			}
-			logs.Info("https server Running on https://%s", app.Server.Addr)
+			logsvr.Info("Bhojpur WebEngine - HTTPS server running on https://%s", app.Server.Addr)
 			if app.Cfg.Listen.AutoTLS {
 				m := autocert.Manager{
 					Prompt:     autocert.AcceptTOS,
@@ -222,7 +222,7 @@ func (app *HttpServer) Run(addr string, mws ...MiddleWare) {
 				pool := x509.NewCertPool()
 				data, err := ioutil.ReadFile(app.Cfg.Listen.TrustCaFile)
 				if err != nil {
-					logs.Info("MutualHTTPS should provide TrustCaFile")
+					logsvr.Info("MutualHTTPS should provide TrustCaFile")
 					return
 				}
 				pool.AppendCertsFromPEM(data)
@@ -232,7 +232,7 @@ func (app *HttpServer) Run(addr string, mws ...MiddleWare) {
 				}
 			}
 			if err := app.Server.ListenAndServeTLS(app.Cfg.Listen.HTTPSCertFile, app.Cfg.Listen.HTTPSKeyFile); err != nil {
-				logs.Critical("ListenAndServeTLS: ", err)
+				logsvr.Critical("ListenAndServeTLS: ", err)
 				time.Sleep(100 * time.Microsecond)
 				endRunning <- true
 			}
@@ -241,24 +241,24 @@ func (app *HttpServer) Run(addr string, mws ...MiddleWare) {
 	if app.Cfg.Listen.EnableHTTP {
 		go func() {
 			app.Server.Addr = addr
-			logs.Info("http server Running on http://%s", app.Server.Addr)
+			logsvr.Info("Bhojpur WebEngine - HTTP server running on http://%s", app.Server.Addr)
 			if app.Cfg.Listen.ListenTCP4 {
 				ln, err := net.Listen("tcp4", app.Server.Addr)
 				if err != nil {
-					logs.Critical("ListenAndServe: ", err)
+					logsvr.Critical("ListenAndServe: ", err)
 					time.Sleep(100 * time.Microsecond)
 					endRunning <- true
 					return
 				}
 				if err = app.Server.Serve(ln); err != nil {
-					logs.Critical("ListenAndServe: ", err)
+					logsvr.Critical("ListenAndServe: ", err)
 					time.Sleep(100 * time.Microsecond)
 					endRunning <- true
 					return
 				}
 			} else {
 				if err := app.Server.ListenAndServe(); err != nil {
-					logs.Critical("ListenAndServe: ", err)
+					logsvr.Critical("ListenAndServe: ", err)
 					time.Sleep(100 * time.Microsecond)
 					endRunning <- true
 				}
@@ -277,22 +277,22 @@ func RouterWithOpts(rootpath string, c ControllerInterface, opts ...ControllerOp
 	return BhojpurApp.RouterWithOpts(rootpath, c, opts...)
 }
 
-// Router adds a patterned controller handler to BeeApp.
+// Router adds a patterned controller handler to BhojpurApp.
 // it's an alias method of HttpServer.Router.
 // usage:
 //  simple router
-//  bhojpur.Router("/admin", &admin.UserController{})
-//  bhojpur.Router("/admin/index", &admin.ArticleController{})
+//  websvr.Router("/admin", &admin.UserController{})
+//  websvr.Router("/admin/index", &admin.ArticleController{})
 //
 //  regex router
 //
-//  bhojpur.Router("/api/:id([0-9]+)", &controllers.RController{})
+//  websvr.Router("/api/:id([0-9]+)", &controllers.RController{})
 //
 //  custom rules
-//  bhojpur.Router("/api/list",&RestController{},"*:ListFood")
-//  bhojpur.Router("/api/create",&RestController{},"post:CreateFood")
-//  bhojpur.Router("/api/update",&RestController{},"put:UpdateFood")
-//  bhojpur.Router("/api/delete",&RestController{},"delete:DeleteFood")
+//  websvr.Router("/api/list",&RestController{},"*:ListFood")
+//  websvr.Router("/api/create",&RestController{},"post:CreateFood")
+//  websvr.Router("/api/update",&RestController{},"put:UpdateFood")
+//  websvr.Router("/api/delete",&RestController{},"delete:DeleteFood")
 func (app *HttpServer) Router(rootPath string, c ControllerInterface, mappingMethods ...string) *HttpServer {
 	return app.RouterWithOpts(rootPath, c, WithRouterMethods(c, mappingMethods...))
 }
@@ -314,8 +314,8 @@ func UnregisterFixedRoute(fixedRoute string, method string) *HttpServer {
 // method type (e.g. "GET" or "POST") for selective removal.
 //
 // Usage (replace "GET" with "*" for all methods):
-//  bhojpur.UnregisterFixedRoute("/yourpreviouspath", "GET")
-//  bhojpur.Router("/yourpreviouspath", yourControllerAddress, "get:GetNewPage")
+//  websvr.UnregisterFixedRoute("/yourpreviouspath", "GET")
+//  websvr.Router("/yourpreviouspath", yourControllerAddress, "get:GetNewPage")
 func (app *HttpServer) UnregisterFixedRoute(fixedRoute string, method string) *HttpServer {
 	subPaths := splitPath(fixedRoute)
 	if method == "" || method == "*" {
@@ -392,9 +392,9 @@ func Include(cList ...ControllerInterface) *HttpServer {
 
 // Include will generate router file in the router/xxx.go from the controller's comments
 // usage:
-// bhojpur.Include(&BankAccount{}, &OrderController{},&RefundController{},&ReceiptController{})
+// websvr.Include(&BankAccount{}, &OrderController{},&RefundController{},&ReceiptController{})
 // type BankAccount struct{
-//   bhojpur.Controller
+//   websvr.Controller
 // }
 //
 // register the function
@@ -427,8 +427,8 @@ func RESTRouter(rootpath string, c ControllerInterface) *HttpServer {
 	return BhojpurApp.RESTRouter(rootpath, c)
 }
 
-// RESTRouter adds a restful controller handler to BeeApp.
-// its' controller implements bhojpur.ControllerInterface and
+// RESTRouter adds a restful controller handler to BhojpurApp.
+// its' controller implements websvr.ControllerInterface and
 // defines a param "pattern/:objectId" to visit each resource.
 func (app *HttpServer) RESTRouter(rootpath string, c ControllerInterface) *HttpServer {
 	app.Router(rootpath, c)
@@ -441,9 +441,9 @@ func AutoRouter(c ControllerInterface) *HttpServer {
 	return BhojpurApp.AutoRouter(c)
 }
 
-// AutoRouter adds defined controller handler to BeeApp.
+// AutoRouter adds defined controller handler to BhojpurApp.
 // it's same to HttpServer.AutoRouter.
-// if bhojpur.AddAuto(&MainController{}) and MainController has methods List and Page,
+// if websvr.AddAuto(&MainController{}) and MainController has methods List and Page,
 // visit the url /main/list to exec List function or /main/page to exec Page function.
 func (app *HttpServer) AutoRouter(c ControllerInterface) *HttpServer {
 	app.Handlers.AddAuto(c)
@@ -455,9 +455,9 @@ func AutoPrefix(prefix string, c ControllerInterface) *HttpServer {
 	return BhojpurApp.AutoPrefix(prefix, c)
 }
 
-// AutoPrefix adds controller handler to BeeApp with prefix.
+// AutoPrefix adds controller handler to BhojpurApp with prefix.
 // it's same to HttpServer.AutoRouterWithPrefix.
-// if bhojpur.AutoPrefix("/admin",&MainController{}) and MainController has methods List and Page,
+// if websvr.AutoPrefix("/admin",&MainController{}) and MainController has methods List and Page,
 // visit the url /admin/main/list to exec List function or /admin/main/page to exec Page function.
 func (app *HttpServer) AutoPrefix(prefix string, c ControllerInterface) *HttpServer {
 	app.Handlers.AddAutoPrefix(prefix, c)
@@ -631,7 +631,7 @@ func Get(rootpath string, f HandleFunc) *HttpServer {
 
 // Get used to register router for Get method
 // usage:
-//    bhojpur.Get("/", func(ctx *context.Context){
+//    websvr.Get("/", func(ctx *context.Context){
 //          ctx.Output.Body("hello world")
 //    })
 func (app *HttpServer) Get(rootpath string, f HandleFunc) *HttpServer {
@@ -646,7 +646,7 @@ func Post(rootpath string, f HandleFunc) *HttpServer {
 
 // Post used to register router for Post method
 // usage:
-//    bhojpur.Post("/api", func(ctx *context.Context){
+//    websvr.Post("/api", func(ctx *context.Context){
 //          ctx.Output.Body("hello world")
 //    })
 func (app *HttpServer) Post(rootpath string, f HandleFunc) *HttpServer {
@@ -661,7 +661,7 @@ func Delete(rootpath string, f HandleFunc) *HttpServer {
 
 // Delete used to register router for Delete method
 // usage:
-//    bhojpur.Delete("/api", func(ctx *context.Context){
+//    websvr.Delete("/api", func(ctx *context.Context){
 //          ctx.Output.Body("hello world")
 //    })
 func (app *HttpServer) Delete(rootpath string, f HandleFunc) *HttpServer {
@@ -676,7 +676,7 @@ func Put(rootpath string, f HandleFunc) *HttpServer {
 
 // Put used to register router for Put method
 // usage:
-//    bhojpur.Put("/api", func(ctx *context.Context){
+//    websvr.Put("/api", func(ctx *context.Context){
 //          ctx.Output.Body("hello world")
 //    })
 func (app *HttpServer) Put(rootpath string, f HandleFunc) *HttpServer {
@@ -691,7 +691,7 @@ func Head(rootpath string, f HandleFunc) *HttpServer {
 
 // Head used to register router for Head method
 // usage:
-//    bhojpur.Head("/api", func(ctx *context.Context){
+//    websvr.Head("/api", func(ctx *context.Context){
 //          ctx.Output.Body("hello world")
 //    })
 func (app *HttpServer) Head(rootpath string, f HandleFunc) *HttpServer {
@@ -707,7 +707,7 @@ func Options(rootpath string, f HandleFunc) *HttpServer {
 
 // Options used to register router for Options method
 // usage:
-//    bhojpur.Options("/api", func(ctx *context.Context){
+//    websvr.Options("/api", func(ctx *context.Context){
 //          ctx.Output.Body("hello world")
 //    })
 func (app *HttpServer) Options(rootpath string, f HandleFunc) *HttpServer {
@@ -722,7 +722,7 @@ func Patch(rootpath string, f HandleFunc) *HttpServer {
 
 // Patch used to register router for Patch method
 // usage:
-//    bhojpur.Patch("/api", func(ctx *context.Context){
+//    websvr.Patch("/api", func(ctx *context.Context){
 //          ctx.Output.Body("hello world")
 //    })
 func (app *HttpServer) Patch(rootpath string, f HandleFunc) *HttpServer {
@@ -737,7 +737,7 @@ func Any(rootpath string, f HandleFunc) *HttpServer {
 
 // Any used to register router for all methods
 // usage:
-//    bhojpur.Any("/api", func(ctx *context.Context){
+//    websvr.Any("/api", func(ctx *context.Context){
 //          ctx.Output.Body("hello world")
 //    })
 func (app *HttpServer) Any(rootpath string, f HandleFunc) *HttpServer {
@@ -752,7 +752,7 @@ func Handler(rootpath string, h http.Handler, options ...interface{}) *HttpServe
 
 // Handler used to register a Handler router
 // usage:
-//    bhojpur.Handler("/api", http.HandlerFunc(func (w http.ResponseWriter, r *http.Request) {
+//    websvr.Handler("/api", http.HandlerFunc(func (w http.ResponseWriter, r *http.Request) {
 //          fmt.Fprintf(w, "Hello, %q", html.EscapeString(r.URL.Path))
 //    }))
 func (app *HttpServer) Handler(rootpath string, h http.Handler, options ...interface{}) *HttpServer {
@@ -767,7 +767,7 @@ func InsertFilter(pattern string, pos int, filter FilterFunc, opts ...FilterOpt)
 
 // InsertFilter adds a FilterFunc with pattern condition and action constant.
 // The pos means action constant including
-// bhojpur.BeforeStatic, bhojpur.BeforeRouter, bhojpur.BeforeExec, bhojpur.AfterExec and bhojpur.FinishRouter.
+// websvr.BeforeStatic, websvr.BeforeRouter, websvr.BeforeExec, websvr.AfterExec and websvr.FinishRouter.
 // The bool params is for setting the returnOnOutput value (false allows multiple filters to execute)
 func (app *HttpServer) InsertFilter(pattern string, pos int, filter FilterFunc, opts ...FilterOpt) *HttpServer {
 	app.Handlers.InsertFilter(pattern, pos, filter, opts...)
@@ -799,7 +799,7 @@ func (app *HttpServer) initAddr(addr string) {
 	}
 }
 
-func (app *HttpServer) LogAccess(ctx *beecontext.Context, startTime *time.Time, statusCode int) {
+func (app *HttpServer) LogAccess(ctx *ctxsvr.Context, startTime *time.Time, statusCode int) {
 	// Skip logging if AccessLogs config is false
 	if !app.Cfg.Log.AccessLogs {
 		return
@@ -817,7 +817,7 @@ func (app *HttpServer) LogAccess(ctx *beecontext.Context, startTime *time.Time, 
 		requestTime = *startTime
 		elapsedTime = time.Since(*startTime)
 	}
-	record := &logs.AccessLogRecord{
+	record := &logsvr.AccessLogRecord{
 		RemoteAddr:     ctx.Input.IP(),
 		RequestTime:    requestTime,
 		RequestMethod:  r.Method,
@@ -831,7 +831,7 @@ func (app *HttpServer) LogAccess(ctx *beecontext.Context, startTime *time.Time, 
 		RemoteUser:     r.Header.Get("Remote-User"),
 		BodyBytesSent:  r.ContentLength,
 	}
-	logs.AccessLog(record, app.Cfg.Log.AccessLogsFormat)
+	logsvr.AccessLog(record, app.Cfg.Log.AccessLogsFormat)
 }
 
 // PrintTree prints all registered routers.

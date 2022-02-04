@@ -27,10 +27,10 @@ import (
 	"time"
 
 	"github.com/bhojpur/web/pkg/context"
-	web "github.com/bhojpur/web/pkg/engine"
+	websvr "github.com/bhojpur/web/pkg/engine"
 )
 
-func testRequest(t *testing.T, handler *web.ControllerRegister, requestIP, method, path string, code int) {
+func testRequest(t *testing.T, handler *websvr.ControllerRegister, requestIP, method, path string, code int) {
 	r, _ := http.NewRequest(method, path, nil)
 	r.Header.Set("X-Real-Ip", requestIP)
 	w := httptest.NewRecorder()
@@ -41,8 +41,8 @@ func testRequest(t *testing.T, handler *web.ControllerRegister, requestIP, metho
 }
 
 func TestLimiter(t *testing.T) {
-	handler := web.NewControllerRegister()
-	err := handler.InsertFilter("/foo/*", web.BeforeRouter, NewLimiter(WithRate(1*time.Millisecond), WithCapacity(1), WithSessionKey(RemoteIPSessionKey)))
+	handler := websvr.NewControllerRegister()
+	err := handler.InsertFilter("/foo/*", websvr.BeforeRouter, NewLimiter(WithRate(1*time.Millisecond), WithCapacity(1), WithSessionKey(RemoteIPSessionKey)))
 	if err != nil {
 		t.Error(err)
 	}
@@ -61,8 +61,8 @@ func TestLimiter(t *testing.T) {
 
 func BenchmarkWithoutLimiter(b *testing.B) {
 	recorder := httptest.NewRecorder()
-	handler := web.NewControllerRegister()
-	web.BConfig.RunMode = web.PROD
+	handler := websvr.NewControllerRegister()
+	websvr.BConfig.RunMode = websvr.PROD
 	handler.Any("/foo", func(ctx *context.Context) {
 		ctx.Output.SetStatus(500)
 	})
@@ -77,9 +77,9 @@ func BenchmarkWithoutLimiter(b *testing.B) {
 
 func BenchmarkWithLimiter(b *testing.B) {
 	recorder := httptest.NewRecorder()
-	handler := web.NewControllerRegister()
-	web.BConfig.RunMode = web.PROD
-	err := handler.InsertFilter("*", web.BeforeRouter, NewLimiter(WithRate(1*time.Millisecond), WithCapacity(100)))
+	handler := websvr.NewControllerRegister()
+	websvr.BConfig.RunMode = websvr.PROD
+	err := handler.InsertFilter("*", websvr.BeforeRouter, NewLimiter(WithRate(1*time.Millisecond), WithCapacity(100)))
 	if err != nil {
 		b.Error(err)
 	}

@@ -24,14 +24,14 @@ package apiauth
 //
 // Simple Usage:
 //	import(
-//		"github.com/bhojpur/web/pkg/engine"
+//		websvr "github.com/bhojpur/web/pkg/engine"
 //		"github.com/bhojpur/web/pkg/filter/apiauth"
 //	)
 //
 //	func main(){
 //		// apiauth every request
-//		bhojpur.InsertFilter("*", bhojpur.BeforeRouter,apiauth.APIBaiscAuth("appid","appkey"))
-//		bhojpur.Run()
+//		websvr.InsertFilter("*", websvr.BeforeRouter, apiauth.APIBasicAuth("appid","appkey"))
+//		websvr.Run()
 //	}
 //
 // Advanced Usage:
@@ -41,7 +41,7 @@ package apiauth
 //		// maybe store in configure, maybe in database
 //	}
 //
-//	bhojpur.InsertFilter("*", bhojpur.BeforeRouter,apiauth.APISecretAuth(getAppSecret, 360))
+//	websvr.InsertFilter("*", websvr.BeforeRouter,apiauth.APISecretAuth(getAppSecret, 360))
 //
 // Information:
 //
@@ -49,7 +49,7 @@ package apiauth
 //
 // 1. appid
 //
-//		 appid is assigned to the Web Application
+//		 appid is assigned to the application
 //
 // 2. signature
 //
@@ -72,7 +72,7 @@ import (
 	"sort"
 	"time"
 
-	ctxsvr "github.com/bhojpur/web/pkg/context"
+	"github.com/bhojpur/web/pkg/context"
 	websvr "github.com/bhojpur/web/pkg/engine"
 )
 
@@ -92,7 +92,7 @@ func APIBasicAuth(appid, appkey string) websvr.FilterFunc {
 
 // APISecretAuth uses AppIdToAppSecret verify and
 func APISecretAuth(f AppIDToAppSecret, timeout int) websvr.FilterFunc {
-	return func(ctx *ctxsvr.Context) {
+	return func(ctx *context.Context) {
 		if ctx.Input.Query("appid") == "" {
 			ctx.ResponseWriter.WriteHeader(403)
 			ctx.WriteString("missing query parameter: appid")
@@ -115,10 +115,10 @@ func APISecretAuth(f AppIDToAppSecret, timeout int) websvr.FilterFunc {
 			ctx.WriteString("missing query parameter: timestamp")
 			return
 		}
-		u, err := time.Parse("2018-03-26 15:04:05", ctx.Input.Query("timestamp"))
+		u, err := time.Parse("2006-01-02 15:04:05", ctx.Input.Query("timestamp"))
 		if err != nil {
 			ctx.ResponseWriter.WriteHeader(403)
-			ctx.WriteString("incorrect timestamp format. Should be in the form 2018-03-26 15:04:05")
+			ctx.WriteString("incorrect timestamp format. Should be in the form 2006-01-02 15:04:05")
 
 			return
 		}
