@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Bhojpur Web - Welcome Template</title>
+    <title>Bhojpur WebEngine - Welcome Template</title>
   </head>
   <body>
 

@@ -527,7 +527,7 @@ func init() {
 
 	err := InitGlobalInstance("ini", "conf/app.conf")
 	if err != nil {
-		logsvr.Warn("Bhojpur Web init global config instance failed. If you do not use this, just ignore it. ", err)
+		logsvr.Warn("Bhojpur WebEngine - init global config instance failed. If you do not use this, just ignore it. ", err)
 	}
 }
 

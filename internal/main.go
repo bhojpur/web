@@ -23,8 +23,12 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
+	ctxsvr "github.com/bhojpur/web/pkg/context"
+	utils "github.com/bhojpur/web/pkg/core/utils"
 	websvr "github.com/bhojpur/web/pkg/engine"
+	"github.com/bhojpur/web/pkg/filter/cors"
 	"github.com/bhojpur/web/pkg/synthesis"
 	test "github.com/bhojpur/web/test"
 )
@@ -38,10 +42,29 @@ func namasteHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	websvr.Run("127.0.0.1:3000")
-	websvr.AddFuncMap("/", http.HandlerFunc(indexHandler))
+	websvr.InsertFilter("*", websvr.BeforeRouter, cors.Allow(&cors.Options{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "X-Requested-With", "Content-Type", "Accept"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}))
+
+	// CORS Post method issue
+	websvr.InsertFilter("*", websvr.BeforeRouter, func(ctx *ctxsvr.Context) {
+		if ctx.Input.Method() == "OPTIONS" {
+			ctx.WriteString("ok")
+		}
+	})
+
+	//websvr.DelStaticPath("/static")
+	websvr.SetStaticPath("/static", "pkg/webui/build/static")
+	websvr.InsertFilter("/", websvr.BeforeRouter, TransparentStatic) // must has this for default page
+	websvr.InsertFilter("/*", websvr.BeforeRouter, TransparentStatic)
+	websvr.Run() // custom configuration read fron ../conf/app.conf file
+	websvr.AddFuncMap("*", http.HandlerFunc(indexHandler))
 	websvr.AddFuncMap("/अभिवादन/:नाम", http.HandlerFunc(namasteHandler))
-	websvr.AddFuncMap("/",
+	websvr.AddFuncMap("/data",
 		http.FileServer(
 			&synthesis.AssetFS{
 				Asset:     test.Asset,
@@ -50,4 +73,24 @@ func main() {
 				Prefix:    "data",
 				Fallback:  "index.html",
 			}))
+}
+
+func TransparentStatic(ctx *ctxsvr.Context) {
+	urlPath := ctx.Request.URL.Path
+	if strings.HasPrefix(urlPath, "/dbg/") {
+		return
+	}
+
+	path := "internal"
+	if urlPath == "/" {
+		path += "/index.html"
+	} else {
+		path += urlPath
+	}
+
+	if utils.FileExists(path) {
+		http.ServeFile(ctx.ResponseWriter, ctx.Request, path)
+	} else {
+		http.ServeFile(ctx.ResponseWriter, ctx.Request, "internal/index.html")
+	}
 }

@@ -82,7 +82,7 @@ func NewHttpServerWithCfg(cfg *Config) *HttpServer {
 // MiddleWare function for http.Handler
 type MiddleWare func(http.Handler) http.Handler
 
-// Run Bhojpur.NET Platform application.
+// Run the Bhojpur.NET Platform's primary web server engine.
 func (app *HttpServer) Run(addr string, mws ...MiddleWare) {
 	initBeforeHTTPRun()
 

@@ -43,12 +43,13 @@ var hooks = make([]hookfunc, 0) // hook function slice to store the hookfunc
 
 // AddAPPStartHook is used to register the hookfunc
 // The hookfuncs will run in websvr.Run()
-// such as initiating session , starting middleware , building template, starting admin control and so on.
+// such as initiating session , starting middleware , building template,
+// starting admin control and so on.
 func AddAPPStartHook(hf ...hookfunc) {
 	hooks = append(hooks, hf...)
 }
 
-// Run Bhojpur.NET Platform application.
+// Run the Bhojpur.NET Platform's primary web server engine.
 // websvr.Run() default run on HttpPort
 // websvr.Run("localhost")
 // websvr.Run(":8089")
@@ -60,7 +61,8 @@ func Run(params ...string) {
 	BhojpurApp.Run("")
 }
 
-// RunWithMiddleWares Run Bhojpur.NET Platform application with middlewares.
+// RunWithMiddleWares Run the Bhojpur.NET Platform primary web server engine
+// with middlewares.
 func RunWithMiddleWares(addr string, mws ...MiddleWare) {
 	BhojpurApp.Run(addr, mws...)
 }

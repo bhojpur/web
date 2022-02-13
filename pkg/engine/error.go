@@ -44,7 +44,7 @@ var tpl = `
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>Bhojpur Web - Application Error</title>
+    <title>Bhojpur WebEngine - Application Error</title>
     <style>
         html, body, body * {padding: 0; margin: 0;}
         #header {background:#ffd; border-bottom:solid 2px #A31515; padding: 20px 10px;}
@@ -81,7 +81,7 @@ var tpl = `
         </div>
     </div>
     <div id="footer">
-        <p>Bhojpur Web {{ .BhojpurVersion }} (application framework)</p>
+        <p>Bhojpur WebEngine {{ .BhojpurVersion }} (application framework)</p>
         <p>Go version: {{.GoVersion}}</p>
     </div>
 </body>
@@ -108,7 +108,7 @@ var errtpl = `
 <html lang="en">
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-		<title>{{.Title}}</title>
+		<title>Bhojpur WebEngine - {{.Title}}</title>
 		<style type="text/css">
 			* {
 				margin:0;
@@ -183,8 +183,11 @@ var errtpl = `
 				</div>
 				<div id="content">
 					{{.Content}}
+					<br>
 					<a href="/" title="Home" class="button">Go Home</a><br />
-					<br>Powered by Bhojpur Web {{.BhojpurVersion}}
+					<br>
+					<hr size="1px">
+					<br>Powered by Bhojpur WebEngine {{.BhojpurVersion}}
 				</div>
 			</div>
 		</div>
@@ -271,8 +274,8 @@ func invalidxsrf(rw http.ResponseWriter, r *http.Request) {
 func notFound(rw http.ResponseWriter, r *http.Request) {
 	responseError(rw, r,
 		404,
-		"<br>The page you have requested has flown the Arrah (Bihar, India)."+
-			"<br>Perhaps you are here because:"+
+		"<br>The page you have requested has flown to Nirbhaya Dihra."+
+			"<br>Perhaps, you are here because:"+
 			"<br><br><ul>"+
 			"<br>The page has moved"+
 			"<br>The page no longer exists"+
@@ -286,7 +289,7 @@ func notFound(rw http.ResponseWriter, r *http.Request) {
 func methodNotAllowed(rw http.ResponseWriter, r *http.Request) {
 	responseError(rw, r,
 		405,
-		"<br>The method you have requested Not Allowed."+
+		"<br>The method you have requested is Not Allowed."+
 			"<br>Perhaps you are here because:"+
 			"<br><br><ul>"+
 			"<br>The method specified in the Request-Line is not allowed for the resource identified by the Request-URI"+
