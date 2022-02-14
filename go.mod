@@ -6,7 +6,7 @@ require (
 	github.com/bhojpur/image v0.0.1
 	github.com/bhojpur/logger v0.0.3
 	github.com/bhojpur/mail v0.0.1
-	github.com/bhojpur/policy v0.0.4
+	github.com/bhojpur/policy v0.0.5
 	github.com/bhojpur/session v0.0.2
 	github.com/bhojpur/token v0.0.1
 	github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d
