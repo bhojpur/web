@@ -480,6 +480,7 @@ var mimemaps = map[string]string{
 	".wb1":         "application/x-qpro",
 	".wbmp":        "image/vnd.wap.wbmp",
 	".web":         "application/vndxara",
+	".webmanifest": "application/manifest+json",
 	".wiz":         "application/msword",
 	".wk1":         "application/x-123",
 	".wmf":         "windows/metafile",

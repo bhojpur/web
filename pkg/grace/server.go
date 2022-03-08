@@ -1,3 +1,6 @@
+//go:build !js && !wasm
+// +build !js,!wasm
+
 package grace
 
 // Copyright (c) 2018 Bhojpur Consulting Private Limited, India. All rights reserved.

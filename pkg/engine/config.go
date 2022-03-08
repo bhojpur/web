@@ -465,11 +465,15 @@ func init() {
 	BConfig = newBConfig()
 	var err error
 	if AppPath, err = filepath.Abs(filepath.Dir(os.Args[0])); err != nil {
-		panic(err)
+		if err.Error() != "stat .: not implemented on js" {
+			panic(err)
+		}
 	}
 	WorkPath, err = os.Getwd()
 	if err != nil {
-		panic(err)
+		if err.Error() != "stat .: not implemented on js" {
+			panic(err)
+		}
 	}
 	filename := "app.conf"
 	if os.Getenv("BHOJPUR_RUNMODE") != "" {
@@ -484,7 +488,9 @@ func init() {
 		}
 	}
 	if err = parseConfig(appConfigPath); err != nil {
-		panic(err)
+		if err.Error() != "open conf/app.conf: not implemented on js" {
+			panic(err)
+		}
 	}
 }
 

@@ -33,7 +33,7 @@ package cors
 //		// - Origin header
 //		// - Credentials share
 //		bhojpur.InsertFilter("*", bhojpur.BeforeRouter, cors.Allow(&cors.Options{
-//			AllowOrigins:     []string{"https://*.foo.com"},
+//			AllowOrigins:     []string{"https://*.bhojpur.net"},
 //			AllowMethods:     []string{"PUT", "PATCH"},
 //			AllowHeaders:     []string{"Origin"},
 //			ExposeHeaders:    []string{"Content-Length"},

@@ -12,6 +12,7 @@ require (
 	github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d
 	github.com/go-kit/kit v0.9.0
 	github.com/go-sql-driver/mysql v1.6.0
+	github.com/gomarkdown/markdown v0.0.0-20220306001849-6e467e7bd3e8
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0

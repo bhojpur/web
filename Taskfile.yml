@@ -17,10 +17,15 @@ tasks:
         - cp bin/webutl $GOPATH/bin
 
     build-web:
-        desc: Build the web application
+        desc: Build the web application using WebAssembly method
         cmds:
         - GOFLAGS=-mod=mod go build -o bin/webctl client.go 
         - GOFLAGS=-mod=mod go build -o bin/websvr server.go
+
+    build-web-sample:
+        desc: Build the web application using WebAssembly method
+        cmds:
+        - GOARCH=wasm GOOS=js GOFLAGS=-mod=mod go build -o internal/web/app.wasm internal/main.go
         - GOFLAGS=-mod=mod go build -o bin/webdbg internal/main.go 
 
     build-darwin:
@@ -72,6 +77,11 @@ tasks:
         desc: Run the web client application from source code
         cmds:
         - GOFLAGS=-mod=mod go run client.go
+
+    run-web-sample:
+        desc: Run the web client application from build
+        cmds:
+        - cd internal; ../bin/webdbg local
 
     run-mobile:
         desc: Run the mobile client application on emulator
