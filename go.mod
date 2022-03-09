@@ -13,7 +13,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/go-delve/delve v1.8.2
-	github.com/go-kit/kit v0.9.0
+	github.com/go-kit/kit v0.12.0
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gomarkdown/markdown v0.0.0-20220306001849-6e467e7bd3e8
 	github.com/gomodule/redigo v2.0.0+incompatible
@@ -47,7 +47,7 @@ require (
 
 require (
 	cloud.google.com/go/compute v1.1.0 // indirect
-	github.com/Knetic/govaluate v3.0.0+incompatible // indirect
+	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/cilium/ebpf v0.8.1 // indirect
@@ -61,10 +61,11 @@ require (
 	github.com/cupcake/rdb v0.0.0-20161107195141-43ba34106c76 // indirect
 	github.com/derekparker/trie v0.0.0-20200317170641-1fdf38b7b0e9 // indirect
 	github.com/docker/spdystream v0.1.0 // indirect
-	github.com/edsrzf/mmap-go v0.0.0-20170320065105-0bce6a688712 // indirect
+	github.com/edsrzf/mmap-go v1.0.0 // indirect
 	github.com/elastic/go-elasticsearch/v6 v6.8.10 // indirect
 	github.com/go-delve/liner v1.2.2-1 // indirect
-	github.com/go-logfmt/logfmt v0.5.0 // indirect
+	github.com/go-kit/log v0.2.0 // indirect
+	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/go-logr/logr v1.2.2 // indirect
 	github.com/go-redis/redis/v7 v7.4.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -89,8 +90,8 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
-	github.com/prometheus/common v0.26.0 // indirect
-	github.com/prometheus/procfs v0.6.0 // indirect
+	github.com/prometheus/common v0.30.0 // indirect
+	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/rogpeppe/go-internal v1.8.1 // indirect
 	github.com/shiena/ansicolor v0.0.0-20200904210342-c7312218db18 // indirect
