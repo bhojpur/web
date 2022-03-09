@@ -12,7 +12,7 @@ tasks:
     build-tools:
         desc: Build the software tools for build, release of Bhojpur Web applications
         cmds:
-        - GOFLAGS=-mod=mod go build -o bin/webutl cmd/tools/main.go 
+        - GOFLAGS=-mod=mod go build -o bin/webutl cmd/main.go 
         - chmod 755 bin/webutl
         - cp bin/webutl $GOPATH/bin
 

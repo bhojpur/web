@@ -65,9 +65,12 @@ $ webctl perftest --num-requests 100 --concurrent 4 https://www.bhojpur.net
 ```
 
 Then, it would display something like this
+
+```bash
     # Requests: 100
     # Successes: 100
     # Failures: 0
     # Unavailable: 0
     Duration: 1.719238256s
     Average Request Duration: 13.575435ms
+```

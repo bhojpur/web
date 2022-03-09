@@ -38,7 +38,7 @@ var (
 
 // print help.
 func printHelp(errs ...string) {
-	content := `ORM command usage:
+	content := `Bhojpur Web ORM command usage:
 
     syncdb     - auto create tables
     sqlall     - print SQL of create tables
